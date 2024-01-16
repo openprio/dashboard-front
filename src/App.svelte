@@ -1,6 +1,7 @@
 <script>
   import {GeoJSON, LineLayer, MapLibre} from 'svelte-maplibre';
   import Navigation from "./lib/Navigation.svelte";
+  import Login from "./views/Login.svelte";
 
   let data = {
     'type': 'Feature',
@@ -33,41 +34,50 @@
     }
   };
 
+  let authorized = false;
+
+  function authorize() {
+    authorized = true;
+  }
 </script>
 
 <main class="flex flex-col">
-  <Navigation></Navigation>
-  <div class="flex flex-row">
-    <div id="filters" class="w-80 bg-blue-300">
-      <div class="flex flex-col p-4">
-        <label>Grootwagennr.</label>
-        <input type="text"/>
-        <label>Data Owner Code</label>
-        <input type="text"/>
-        <label>Line planning nr.</label>
-        <input type="text"/>
-        <label>Journey nr.</label>
-        <input type="text"/>
+  {#if authorized}
+    <Navigation></Navigation>
+    <div class="flex flex-row">
+      <div id="filters" class="w-80 bg-blue-300">
+        <div class="flex flex-col p-4">
+          <label>Grootwagennr.</label>
+          <input type="text"/>
+          <label>Data Owner Code</label>
+          <input type="text"/>
+          <label>Line planning nr.</label>
+          <input type="text"/>
+          <label>Journey nr.</label>
+          <input type="text"/>
+        </div>
       </div>
-    </div>
-    <MapLibre
-            center={[50,20]}
-            zoom={7}
-            class="w-full h-[94vh]"
-            standardControls
-            style="https:\/\/basemaps.cartocdn.com\/gl\/positron-gl-style\/style.json"
-    >
-      <GeoJSON id="maine" {data}>
-        <LineLayer
-                layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-                paint={{
+      <MapLibre
+              center={[50,20]}
+              zoom={7}
+              class="w-full h-[94vh]"
+              standardControls
+              style="https:\/\/basemaps.cartocdn.com\/gl\/positron-gl-style\/style.json"
+      >
+        <GeoJSON id="maine" {data}>
+          <LineLayer
+                  layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+                  paint={{
         'line-width': 5,
         'line-dasharray': [5, 2],
         'line-color': '#008800',
         'line-opacity': 0.8,
       }}
-        />
-      </GeoJSON>
-    </MapLibre>
-  </div>
+          />
+        </GeoJSON>
+      </MapLibre>
+    </div>
+  {:else}
+    <Login on:authorize={authorize}/>
+  {/if}
 </main>
