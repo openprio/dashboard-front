@@ -2,6 +2,7 @@
   import {GeoJSON, LineLayer, MapLibre} from 'svelte-maplibre';
   import Navigation from "./lib/Navigation.svelte";
   import Login from "./views/Login.svelte";
+  import {access_token} from "./auth.js";
 
   let data = {
     'type': 'Feature',
@@ -42,7 +43,7 @@
 </script>
 
 <main class="flex flex-col">
-  {#if authorized}
+  {#if $access_token}
     <Navigation></Navigation>
     <div class="flex flex-row">
       <div id="filters" class="w-80 bg-blue-300">
