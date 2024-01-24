@@ -37,21 +37,33 @@
 </script>
 <Navigation></Navigation>
 <div class="flex flex-row">
-    <div id="filters" class="w-80 bg-blue-300">
-        <div class="flex flex-col p-4">
-            <label for="car-id">Grootwagennr.</label>
-            <input id="car-id" type="text"/>
-            <label for="data-owner-id">Data Owner Code</label>
-            <input id="data-owner-id" type="text"/>
-            <label for="line-planning-id">Line planning nr.</label>
-            <input id="line-planning-id" type="text"/>
-            <label for="journey-id">Journey nr.</label>
-            <input id="journey-id" type="text"/>
+    <div id="filters" class="w-80 bg-blue-100">
+        <div class="flex flex-col p-4 gap-2">
+            <div>
+                <label for="car-id" class="text-lg font-medium">Grootwagen nr.</label>
+                <input id="car-id" type="text" class="rounded shadow px-2 py-1"/>
+            </div>
+            <div>
+                <label for="data-owner-id" class="text-lg font-medium">Data owner code</label>
+                <input id="data-owner-id" type="text" class="rounded shadow px-2 py-1"/>
+            </div>
+            <div>
+                <label for="line-planning-id" class="text-lg font-medium">Line planning nr.</label>
+                <input id="line-planning-id" type="text" class="rounded shadow px-2 py-1"/>
+            </div>
+            <div>
+                <label for="journey-id" class="text-lg font-medium">Journey nr.</label>
+                <input id="journey-id" type="text" class="rounded shadow px-2 py-1"/>
+            </div>
             {#if $access_token}
-                <label for="start-date">Startdate</label>
-                <input id="start-date" type="text"/>
-                <label for="end-date">Enddate</label>
-                <input id="end-date" type="text"/>
+                <div>
+                    <label for="start-date" class="text-lg font-medium">Startdate</label>
+                    <input id="start-date" type="datetime-local" class="rounded shadow px-2 py-1"/>
+                </div>
+                <div>
+                    <label for="end-date" class="text-lg font-medium">Enddate</label>
+                    <input id="end-date" type="datetime-local" class="rounded shadow px-2 py-1"/>
+                </div>
             {/if}
         </div>
     </div>
