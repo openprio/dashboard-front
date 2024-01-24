@@ -1,7 +1,8 @@
 <script>
-    import {access_token, current_page} from "../auth.js";
+    import {access_token} from "../auth.js";
     import {getAuth, signOut} from 'firebase/auth';
     import Login from "../views/Login.svelte";
+    import {current_page} from "../router.js";
 
     const auth = getAuth(window.firebaseApp)
 

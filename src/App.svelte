@@ -1,5 +1,5 @@
 <script>
-  import {current_page} from "./auth.js";
+import {current_page} from "./router.js";
 </script>
 
 <main class="flex flex-col">

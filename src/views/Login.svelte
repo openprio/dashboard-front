@@ -1,8 +1,9 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     import {getAuth, signInWithEmailAndPassword} from 'firebase/auth';
-    import {access_token, current_page} from "../auth";
+    import {access_token} from "../auth";
     import Dashboard from "./Dashboard.svelte";
+    import {current_page} from "../router.js";
 
     const dispatch = createEventDispatcher();
 
