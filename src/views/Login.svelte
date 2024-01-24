@@ -1,7 +1,8 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     import {getAuth, signInWithEmailAndPassword} from 'firebase/auth';
-    import {access_token} from "../auth";
+    import {access_token, current_page} from "../auth";
+    import Dashboard from "./Dashboard.svelte";
 
     const dispatch = createEventDispatcher();
 
@@ -17,6 +18,7 @@
 
             if (userCredentials.user) {
                 access_token.set(userCredentials.user.accessToken);
+                current_page.set(Dashboard);
 
                 dispatch('authorize');
             }
