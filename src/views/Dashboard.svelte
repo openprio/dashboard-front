@@ -39,19 +39,19 @@
 <div class="flex flex-row">
     <div id="filters" class="w-80 bg-blue-300">
         <div class="flex flex-col p-4">
-            <label>Grootwagennr.</label>
-            <input type="text"/>
-            <label>Data Owner Code</label>
-            <input type="text"/>
-            <label>Line planning nr.</label>
-            <input type="text"/>
-            <label>Journey nr.</label>
-            <input type="text"/>
+            <label for="car-id">Grootwagennr.</label>
+            <input id="car-id" type="text"/>
+            <label for="data-owner-id">Data Owner Code</label>
+            <input id="data-owner-id" type="text"/>
+            <label for="line-planning-id">Line planning nr.</label>
+            <input id="line-planning-id" type="text"/>
+            <label for="journey-id">Journey nr.</label>
+            <input id="journey-id" type="text"/>
             {#if $access_token}
-                <label>Startdate</label>
-                <input type="text"/>
-                <label>Enddate</label>
-                <input type="text"/>
+                <label for="start-date">Startdate</label>
+                <input id="start-date" type="text"/>
+                <label for="end-date">Enddate</label>
+                <input id="end-date" type="text"/>
             {/if}
         </div>
     </div>
