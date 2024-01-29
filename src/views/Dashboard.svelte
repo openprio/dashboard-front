@@ -33,6 +33,15 @@
             ]
         }
     };
+    import { onMount } from 'svelte';
+    import socket from '../socket.js';
+    let messages = [];
+
+    onMount(() => {
+        socket.subscribe(currentMessage => {
+            messages = [...messages, currentMessage];
+        })
+    })
 
 </script>
 <Navigation></Navigation>
