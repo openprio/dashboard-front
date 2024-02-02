@@ -1,5 +1,5 @@
 <script>
-    import {GeoJSON, LineLayer, MapLibre} from 'svelte-maplibre';
+    import {DefaultMarker, MapLibre, Popup} from 'svelte-maplibre';
     import Navigation from "../lib/Navigation.svelte";
     import {access_token} from "../auth.js";
 
@@ -35,11 +35,20 @@
     };
     import { onMount } from 'svelte';
     import socket from '../socket.js';
+
+    /**
+     * @type {LocationMessage[]}
+     */
     let messages = [];
 
     onMount(() => {
-        socket.subscribe(currentMessage => {
-            messages = [...messages, currentMessage];
+        socket.subscribe(/**
+         * @param {LocationMessage} currentMessage
+         */
+        (currentMessage) => {
+            if (currentMessage) {
+                messages.push(currentMessage);
+            }
         })
     })
 
@@ -77,22 +86,20 @@
         </div>
     </div>
     <MapLibre
-            center={[50,20]}
-            zoom={7}
+            center={[4.3489627, 52.0248904]}
+            zoom={10}
             class="w-full h-[94vh]"
             standardControls
             style="https:\/\/basemaps.cartocdn.com\/gl\/positron-gl-style\/style.json"
     >
-        <GeoJSON id="maine" {data}>
-            <LineLayer
-                    layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-                    paint={{
-                        'line-width': 5,
-                        'line-dasharray': [5, 2],
-                        'line-color': '#008800',
-                        'line-opacity': 0.8,
-                      }}
-            />
-        </GeoJSON>
+        {#each messages as { position, timestamp, vehicleDescriptor }}
+            <!-- Unlike the custom marker example, default markers do not have mouse events,
+            and popups only support the default openOn="click" behavior -->
+            <DefaultMarker lng={position.longitude} lat={position.latitude}>
+                <Popup offset={[0, -10]}>
+                    <div class="text-lg font-bold">{vehicleDescriptor.dataOwnerCode}</div>
+                </Popup>
+            </DefaultMarker>
+        {/each}
     </MapLibre>
 </div>
