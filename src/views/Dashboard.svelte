@@ -16,7 +16,7 @@
          */
         (currentMessage) => {
             if (currentMessage) {
-                messages.push(currentMessage);
+                messages = [...messages, currentMessage];
             }
         })
     })
@@ -64,7 +64,7 @@
         {#each messages as { position, timestamp, vehicleDescriptor }}
             <!-- Unlike the custom marker example, default markers do not have mouse events,
             and popups only support the default openOn="click" behavior -->
-            <DefaultMarker lng={position.longitude} lat={position.latitude}>
+            <DefaultMarker lngLat={{lng: position.longitude, lat: position.latitude}}>
                 <Popup offset={[0, -10]}>
                     <div class="text-lg font-bold">{vehicleDescriptor.dataOwnerCode}</div>
                 </Popup>
