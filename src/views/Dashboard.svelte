@@ -1,5 +1,5 @@
 <script>
-    import {DefaultMarker, MapLibre, Popup} from 'svelte-maplibre';
+    import {GeoJSON, LineLayer, MapLibre, Popup} from 'svelte-maplibre';
     import Navigation from "../lib/Navigation.svelte";
     import {access_token} from "../auth.js";
     import { onMount } from 'svelte';
@@ -20,6 +20,14 @@
             }
         })
     })
+
+    let lineLayer = {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'LineString',
+            'coordinates': messages.map(m => [m.position.longitude, m.position.latitude])
+        }
+    };
 
 </script>
 <Navigation></Navigation>
@@ -61,14 +69,19 @@
             standardControls
             style="https:\/\/basemaps.cartocdn.com\/gl\/positron-gl-style\/style.json"
     >
-        {#each messages as { position, timestamp, vehicleDescriptor }}
-            <!-- Unlike the custom marker example, default markers do not have mouse events,
-            and popups only support the default openOn="click" behavior -->
-            <DefaultMarker lngLat={{lng: position.longitude, lat: position.latitude}}>
+        <GeoJSON id="maine" data={lineLayer}>
+            <LineLayer
+                    layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+                    paint={{
+                        'line-width': 5,
+                        'line-color': '#008800',
+                        'line-opacity': 0.8,
+                      }}
+            >
                 <Popup offset={[0, -10]}>
-                    <div class="text-lg font-bold">{vehicleDescriptor.dataOwnerCode}</div>
+                    <div class="text-lg font-bold">OV</div>
                 </Popup>
-            </DefaultMarker>
-        {/each}
+            </LineLayer>
+        </GeoJSON>
     </MapLibre>
 </div>
