@@ -15,7 +15,7 @@
         current_page.set(Login);
     }
 </script>
-<nav class="flex flex-row items-center justify-between shadow-sm w-full h-16 p-3 z-10 bg-red-700">
+<nav class="flex flex-row items-center justify-between shadow-sm w-full h-16 p-3 z-10 bg-red-700 border-b border-gray-800">
     <a href="/" class="flex flex-row items-center gap-2">
         <div class="flex flex-col items-center">
             <span class="text-xl text-white">OpenPrio</span>
