@@ -81,7 +81,7 @@
             zoom={10}
             class="w-full h-[94vh]"
             standardControls
-            style="https:\/\/basemaps.cartocdn.com\/gl\/positron-gl-style\/style.json"
+            style={'https://api.maptiler.com/maps/basic-v2/style.json?key=OnrP8312jxPUqCynDmRh'}
     >
         <GeoJSON id="maine" data={lineLayer}>
             <LineLayer
