@@ -1,5 +1,5 @@
 <script>
-    import {GeoJSON, LineLayer, MapLibre, Popup} from 'svelte-maplibre';
+    import {DefaultMarker, GeoJSON, LineLayer, MapLibre, Popup} from 'svelte-maplibre';
     import Navigation from "../lib/Navigation.svelte";
     import {access_token} from "../auth.js";
     import { onMount } from 'svelte';
@@ -9,6 +9,7 @@
      * @type {LocationMessage[]}
      */
     let messages = [];
+    let lineLayer = {};
     let showFilters = true;
 
     onMount(() => {
@@ -19,21 +20,20 @@
             if (currentMessage) {
                 messages = [...messages, currentMessage];
             }
+
+            lineLayer = {
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'LineString',
+                    'coordinates': messages.map(m => [m.position.longitude, m.position.latitude])
+                }
+            };
         })
     })
 
     function toggleShowFilters() {
         showFilters = !showFilters;
     }
-
-    let lineLayer = {
-        'type': 'Feature',
-        'geometry': {
-            'type': 'LineString',
-            'coordinates': messages.map(m => [m.position.longitude, m.position.latitude])
-        }
-    };
-
 </script>
 <Navigation></Navigation>
 <div class="flex flex-col md:flex-row">
