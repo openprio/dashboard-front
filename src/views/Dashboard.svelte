@@ -93,7 +93,7 @@
             </div>
         {/if}
         <button class="bg-gray-400 hover:bg-gray-700 h-7 w-full md:h-full md:w-5 text-white" on:click={toggleShowFilters}>
-            {showFilters ? "<" : ">"}
+            <div class="rotate-90 md:rotate-0">{showFilters ? "<" : ">"}</div>
         </button>
     </div>
     <MapLibre
