@@ -1,5 +1,5 @@
 <script>
-    import {DefaultMarker, GeoJSON, LineLayer, MapLibre, Popup} from 'svelte-maplibre';
+    import {DefaultMarker, GeoJSON, LineLayer, MapLibre, Marker, Popup} from 'svelte-maplibre';
     import Navigation from "../lib/Navigation.svelte";
     import {access_token} from "../auth.js";
     import { onMount } from 'svelte';
@@ -9,7 +9,12 @@
      * @type {LocationMessage[]}
      */
     let messages = [];
-    let lineLayer = {};
+
+    /**
+     * @type {LineLayer[]}
+     */
+    let markers = [];
+    let clickedName = '';
     let showFilters = true;
 
     onMount(() => {
@@ -21,13 +26,28 @@
                 messages = [...messages, currentMessage];
             }
 
-            lineLayer = {
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'LineString',
-                    'coordinates': messages.map(m => [m.position.longitude, m.position.latitude])
+            // markers.push({
+            //     'type': 'Feature',
+            //     'geometry': {
+            //         'type': 'LineString',
+            //         'coordinates': messages.map(m => [m.position.longitude, m.position.latitude])
+            //     }
+            // });
+
+            if (currentMessage) {
+                let newPosition = {
+                    lngLat: [currentMessage.position.longitude, currentMessage.position.latitude],
+                    label: currentMessage.vehicleDescriptor.dataOwnerCode,
+                    code: currentMessage.vehicleDescriptor.vehicleNumber,
+                };
+
+                if (markers.find(m => m.code === currentMessage.vehicleDescriptor.vehicleNumber)) {
+                    markers = markers.map(m => m.code !== currentMessage.vehicleDescriptor.vehicleNumber ? m : newPosition)
+                } else {
+                    markers = [...markers, newPosition];
                 }
-            };
+            }
+            console.log(markers);
         })
     })
 
@@ -83,19 +103,36 @@
             standardControls
             style={'https://api.maptiler.com/maps/basic-v2/style.json?key=OnrP8312jxPUqCynDmRh'}
     >
-        <GeoJSON id="maine" data={lineLayer}>
-            <LineLayer
-                    layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-                    paint={{
-                        'line-width': 5,
-                        'line-color': '#008800',
-                        'line-opacity': 0.8,
-                      }}
+        {#each markers as { lngLat, label, code } (code)}
+            <Marker
+                {lngLat}
+                on:click={() => (clickedName = code)}
+                class="grid h-8 w-8 place-items-center rounded-full border border-gray-200 bg-red-300 text-black shadow-2xl focus:outline-2 focus:outline-black"
             >
-                <Popup offset={[0, -10]}>
-                    <div class="text-lg font-bold">OV</div>
+              <span>
+                {label}
+              </span>
+
+                <Popup openOn="hover" offset={[0, -10]}>
+                    <div class="text-lg font-bold">{code}</div>
                 </Popup>
-            </LineLayer>
-        </GeoJSON>
+            </Marker>
+        {/each}
+        <!--{#each Object.entries(markers) as marker}-->
+<!--            <GeoJSON id="maine" data={lineLayer}>-->
+<!--                <LineLayer-->
+<!--                        layout={{ 'line-cap': 'round', 'line-join': 'round' }}-->
+<!--                        paint={{-->
+<!--                            'line-width': 5,-->
+<!--                            'line-color': '#008800',-->
+<!--                            'line-opacity': 0.8,-->
+<!--                          }}-->
+<!--                >-->
+<!--                    <Popup offset={[0, -10]}>-->
+<!--                        <div class="text-lg font-bold">OV</div>-->
+<!--                    </Popup>-->
+<!--                </LineLayer>-->
+<!--            </GeoJSON>-->
+<!--        {/each}-->
     </MapLibre>
 </div>
