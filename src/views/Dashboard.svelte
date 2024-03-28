@@ -37,6 +37,7 @@
             if (currentMessage) {
                 let newPosition = {
                     lngLat: [currentMessage.position.longitude, currentMessage.position.latitude],
+                    bearing: Math.round(currentMessage.position.bearing),
                     label: currentMessage.vehicleDescriptor.dataOwnerCode,
                     code: currentMessage.vehicleDescriptor.vehicleNumber,
                 };
@@ -103,18 +104,37 @@
             standardControls
             style={'https://api.maptiler.com/maps/basic-v2/style.json?key=OnrP8312jxPUqCynDmRh'}
     >
-        {#each markers as { lngLat, label, code } (code)}
+        {#each markers as { lngLat, bearing, label, code } (code)}
             <Marker
                 {lngLat}
                 on:click={() => (clickedName = code)}
-                class="grid h-8 w-8 place-items-center rounded-full border border-gray-200 bg-red-300 text-black shadow-2xl focus:outline-2 focus:outline-black"
+                class="grid h-8 w-8 place-items-center"
             >
-              <span>
-                {label}
-              </span>
+                <div class="w-0 h-0
+                      border-l-[13px] border-l-transparent
+                      border-b-[32px] border-b-black
+                      border-r-[13px] border-r-transparent"
+                        style="transform: rotate({bearing}deg);">
+
+                    <!-- Inner triangle -->
+                    <div class="relative top-[2px] right-[12px] w-0 h-0
+                      border-l-[12px] border-l-transparent
+                      border-b-[29px] border-b-white
+                      border-r-[12px] border-r-transparent">
+                      <div class="text-[8px] text-gray-800 rotate-90">
+                        {label}
+                      </div>
+                    </div>
+                </div>
 
                 <Popup openOn="hover" offset={[0, -10]}>
-                    <div class="text-lg font-bold">{code}</div>
+                    <h2 class="text-lg font-bold">Voertuiginformatie</h2>
+                    <div>
+                        Dataownercode: {label}
+                    </div>
+                    <div>
+                        Grootwagennummer: {code}
+                    </div>
                 </Popup>
             </Marker>
         {/each}
