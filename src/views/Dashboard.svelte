@@ -93,8 +93,15 @@
                 </div>
             </div>
         {/if}
-        <button class="bg-gray-400 hover:bg-gray-700 h-7 w-full md:h-full md:w-5 text-white" on:click={toggleShowFilters}>
-            <div class="rotate-90 md:rotate-0">{showFilters ? "<" : ">"}</div>
+        <button class="group bg-gray-400 hover:bg-gray-700 h-7 w-full md:h-full md:w-5 text-white flex items-center justify-center" on:click={toggleShowFilters}>
+<!--            <div class="rotate-90 md:rotate-0">{showFilters ? "<" : ">"}</div>-->
+            <div class="rotate-90 md:rotate-0">
+                <div class="w-0 h-0 {showFilters ? '-rotate-90' : 'rotate-90'}
+                      border-l-[6px] border-l-transparent
+                      border-b-[14px] border-b-gray-800 group-hover:border-b-white
+                      border-r-[6px] border-r-transparent">
+                </div>
+            </div>
         </button>
     </div>
     <MapLibre
@@ -110,13 +117,13 @@
                 on:click={() => (clickedName = code)}
                 class="grid h-8 w-8 place-items-center"
             >
+                <!-- Triangle -->
                 <div class="w-0 h-0
                       border-l-[13px] border-l-transparent
                       border-b-[32px] border-b-black
                       border-r-[13px] border-r-transparent"
                         style="transform: rotate({bearing}deg);">
 
-                    <!-- Inner triangle -->
                     <div class="relative top-[2px] right-[12px] w-0 h-0
                       border-l-[12px] border-l-transparent
                       border-b-[29px] border-b-white
