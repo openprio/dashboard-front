@@ -57,7 +57,7 @@
 </script>
 <Navigation></Navigation>
 <div class="flex flex-col md:flex-row">
-    <div id="filters" class="bg-gray-100 flex flex-col md:flex-row">
+    <div id="filters" class="bg-gray-100 flex flex-col md:flex-row absolute md:static z-10 w-full md:w-auto">
         {#if showFilters}
             <div class="flex flex-col p-4 gap-2 md:w-80">
                 <div class="flex flex-col">
@@ -99,7 +99,7 @@
     <MapLibre
             center={[4.3489627, 52.0248904]}
             zoom={10}
-            class="w-full h-[94vh]"
+            class="w-full h-[94vh] mt-7 md:mt-0"
             standardControls
             style={'https://api.maptiler.com/maps/basic-v2/style.json?key=OnrP8312jxPUqCynDmRh'}
     >
