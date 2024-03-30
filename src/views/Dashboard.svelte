@@ -96,7 +96,7 @@
             </Marker>
         {/each}
         {#each locations as lngLat}
-            <Marker {lngLat} class="rounded bg-yellow-700 w-2 h-2"></Marker>
+            <Marker {lngLat} class="rounded bg-yellow-700 w-1 h-1"></Marker>
         {/each}
     </MapLibre>
 </div>
