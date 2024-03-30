@@ -145,7 +145,7 @@
                     </div>
                 </div>
 
-                <Popup openOn="hover" offset={[0, -10]}>
+                <Popup openOn="click" offset={[0, -10]}>
                     <h2 class="text-lg font-bold">Voertuiginformatie</h2>
                     <div>
                         Dataownercode: {label}
