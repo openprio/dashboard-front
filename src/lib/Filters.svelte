@@ -2,7 +2,7 @@
     import {access_token} from "../auth.js";
     import { writable } from 'svelte/store';
 
-    let show_filters = writable(JSON.parse(localStorage.show_filters));
+    let show_filters = writable(JSON.parse(localStorage.show_filters ?? "true"));
 
     show_filters.subscribe((bool) => {
         localStorage.setItem('show_filters', JSON.stringify(bool));
