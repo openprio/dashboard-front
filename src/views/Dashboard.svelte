@@ -14,6 +14,8 @@
      * @type {LineLayer[]}
      */
     let markers = [];
+    let locations = [];
+
     let clickedName = '';
     let showFilters = true;
 
@@ -43,14 +45,23 @@
                 };
 
                 if (markers.find(m => m.code === currentMessage.vehicleDescriptor.vehicleNumber)) {
-                    markers = markers.map(m => m.code !== currentMessage.vehicleDescriptor.vehicleNumber ? m : newPosition)
+                    markers = markers.map(m => {
+                        if (m.code !== currentMessage.vehicleDescriptor.vehicleNumber) {
+                            return m;
+                        }
+
+                        locations = [...locations, m.lngLat];
+
+                        return newPosition;
+                    })
                 } else {
                     markers = [...markers, newPosition];
                 }
             }
-            console.log(markers);
+            console.log(locations);
         })
     })
+
 
     function toggleShowFilters() {
         showFilters = !showFilters;
@@ -115,7 +126,7 @@
             <Marker
                 {lngLat}
                 on:click={() => (clickedName = code)}
-                class="grid h-8 w-8 place-items-center"
+                class="grid h-8 w-8 place-items-center z-10"
             >
                 <!-- Triangle -->
                 <div class="w-0 h-0
@@ -145,21 +156,8 @@
                 </Popup>
             </Marker>
         {/each}
-        <!--{#each Object.entries(markers) as marker}-->
-<!--            <GeoJSON id="maine" data={lineLayer}>-->
-<!--                <LineLayer-->
-<!--                        layout={{ 'line-cap': 'round', 'line-join': 'round' }}-->
-<!--                        paint={{-->
-<!--                            'line-width': 5,-->
-<!--                            'line-color': '#008800',-->
-<!--                            'line-opacity': 0.8,-->
-<!--                          }}-->
-<!--                >-->
-<!--                    <Popup offset={[0, -10]}>-->
-<!--                        <div class="text-lg font-bold">OV</div>-->
-<!--                    </Popup>-->
-<!--                </LineLayer>-->
-<!--            </GeoJSON>-->
-<!--        {/each}-->
+        {#each locations as lngLat}
+            <Marker {lngLat} class="rounded bg-yellow-800 w-2 h-2"></Marker>
+        {/each}
     </MapLibre>
 </div>
