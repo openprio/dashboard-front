@@ -84,7 +84,7 @@
                     </div>
                 </div>
 
-                <Popup openOn="click" offset={[0, -10]}>
+                <Popup openOn="click" offset={[0, -10]} popupClass="z-20">
                     <h2 class="text-lg font-bold">Voertuiginformatie</h2>
                     <div>
                         Dataownercode: {label}
