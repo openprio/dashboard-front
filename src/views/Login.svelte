@@ -4,7 +4,7 @@
     import {access_token} from "../auth";
     import Dashboard from "./Dashboard.svelte";
     import {current_page} from "../router.js";
-    import LoadingSpinner from "../lib/LoadingSpinner.svelte";
+    import LoadingSpinner from "../components/LoadingSpinner.svelte";
 
     const dispatch = createEventDispatcher();
 

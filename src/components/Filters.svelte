@@ -47,12 +47,12 @@
             </div>
         </div>
     {/if}
-    <button class="group bg-gray-400 hover:bg-gray-700 h-7 w-full md:h-full md:w-5 text-white flex items-center justify-center" on:click={toggleShowFilters}>
+    <button class="group bg-gray-400 hover:bg-gray-700 h-6 w-full md:h-full md:w-4 text-white flex items-center justify-center" on:click={toggleShowFilters}>
         <div class="rotate-90 md:rotate-0">
             <div class="w-0 h-0 {$show_filters ? '-rotate-90' : 'rotate-90'}
-                      border-l-[6px] border-l-transparent
-                      border-b-[14px] border-b-gray-800 group-hover:border-b-white
-                      border-r-[6px] border-r-transparent">
+                      border-l-[5px] border-l-transparent
+                      border-b-[12px] border-b-gray-800 group-hover:border-b-white
+                      border-r-[5px] border-r-transparent">
             </div>
         </div>
     </button>
