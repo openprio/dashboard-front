@@ -72,6 +72,23 @@
         })
     })
 
+    function toIsoString(date) {
+        var tzo = -date.getTimezoneOffset(),
+            dif = tzo >= 0 ? '+' : '-',
+            pad = function(num) {
+                return (num < 10 ? '0' : '') + num;
+            };
+
+        return date.getFullYear() +
+            '-' + pad(date.getMonth() + 1) +
+            '-' + pad(date.getDate()) +
+            'T' + pad(date.getHours()) +
+            ':' + pad(date.getMinutes()) +
+            ':' + pad(date.getSeconds()) +
+            dif + pad(Math.floor(Math.abs(tzo) / 60)) +
+            ':' + pad(Math.abs(tzo) % 60);
+    }
+
 </script>
 <Navigation></Navigation>
 <div class="flex flex-col md:flex-row">
@@ -129,30 +146,36 @@
                 </div>
                 <div class="flex flex-col">
                     <h1 class="text-lg font-bold">Deurstatus</h1>
-                    <span>{selectedVehicle.doorStatus}</span>
+                    {#if selectedVehicle.doorStatus == 2}
+                    <div class="w-96 bg-green-500 h-4"></div>
+                    {:else if selectedVehicle.doorStatus == 1} 
+                    <div class="w-96 bg-red-500 h-4"></div>
+                    {:else if selectedVehicle.doorStatus == 3} 
+                    <div class="w-96 bg-yellow-500 h-4"></div>
+                    {/if}
                 </div>
                 <div class="flex flex-col">
                     <h1 class="text-lg font-bold">Voertuigbeschrijving</h1>
                     <div class="flex flex-col">
                         <div class="flex gap-2 justify-between">
-                            <h3>Voertuignummer</h3>
+                            <h3>DataOwnerCode</h3>
+                            <span>{selectedVehicle.vehicleDescriptor.dataOwnerCode}</span>
+                        </div>
+                        <div class="flex gap-2 justify-between">
+                            <h3>VehicleNumber</h3>
                             <span>{selectedVehicle.vehicleDescriptor.vehicleNumber}</span>
                         </div>
                         <div class="flex gap-2 justify-between">
-                            <h3>Block code</h3>
+                            <h3>BlockCode</h3>
                             <span>{selectedVehicle.vehicleDescriptor.blockCode}</span>
                         </div>
                         <div class="flex gap-2 justify-between">
-                            <h3>Rij richting</h3>
+                            <h3>Direction</h3>
                             <span>{selectedVehicle.vehicleDescriptor.drivingDirection}</span>
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Aantal gekoppelde voertuigen</h3>
                             <span>{selectedVehicle.vehicleDescriptor.numberOfVehiclesCoupled}</span>
-                        </div>
-                        <div class="flex gap-2 justify-between">
-                            <h3>Data owner code</h3>
-                            <span>{selectedVehicle.vehicleDescriptor.dataOwnerCode}</span>
                         </div>
                     </div>
                 </div>
@@ -161,19 +184,19 @@
                     <div class="flex flex-col">
                         <div class="flex gap-2 justify-between">
                             <h3>Latitude</h3>
-                            <span>{selectedVehicle.position.latitude}</span>
+                            <span>{selectedVehicle.position.latitude.toFixed(6)}</span>
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Longitude</h3>
-                            <span>{selectedVehicle.position.longitude}</span>
+                            <span>{selectedVehicle.position.longitude.toFixed(6)}</span>
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Snelheid</h3>
-                            <span>{selectedVehicle.position.speed}</span>
+                            <span>{selectedVehicle.position.speed*3.6}km/h</span>
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Hdop</h3>
-                            <span>{selectedVehicle.position.hdop}</span>
+                            <span>{selectedVehicle.position.hdop.toFixed(2)}</span>
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Nauwkeurigheid</h3>
@@ -181,13 +204,17 @@
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Odometer</h3>
-                            <span>{selectedVehicle.position.odometer}</span>
+                            <span>{selectedVehicle.position.odometer}m</span>
                         </div>
                     </div>
                 </div>
                 <div class="flex flex-col">
                     <h1 class="text-lg font-bold">Timestamp</h1>
-                    <span>{selectedVehicle.timestamp}</span>
+                    <span>{toIsoString(new Date(selectedVehicle.timestamp))}</span>
+                    <div class="flex gap-2 justify-between">
+                        <h3>Latency</h3>
+                        <span>{new Date().getTime() - selectedVehicle.timestamp}ms</span>
+                    </div>
                 </div>
             </div>
         </div>
