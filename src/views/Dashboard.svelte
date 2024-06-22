@@ -6,34 +6,9 @@
     import Filters from "../components/Filters.svelte";
 
     /**
-     * @type LocationMessage
-     */
-    const debugMessage = {
-        doorStatus: 1,
-        position: {
-            longitude: 4.3171954,
-            latitude: 52.0821225,
-            bearing: 0,
-            speed: 0,
-            accuracy: 1,
-            hdop: 0,
-            odometer: 0,
-        },
-        timestamp: 123,
-        vehicleDescriptor: {
-            blockCode: 1,
-            drivingDirection: 2,
-            numberOfVehiclesCoupled: 3,
-            dataOwnerCode: 4,
-            vehicleNumber: 5,
-        },
-    };
-
-
-    /**
      * @type {LocationMessage[]}
      */
-    let markers = [debugMessage];
+    let markers = [];
 
     /**
      * @type {[number, number][]}
