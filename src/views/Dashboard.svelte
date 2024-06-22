@@ -192,7 +192,7 @@
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Snelheid</h3>
-                            <span>{selectedVehicle.position.speed*3.6}km/h</span>
+                            <span>{(selectedVehicle.position.speed*3.6).toFixed(1)}km/h</span>
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Hdop</h3>
