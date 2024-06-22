@@ -33,11 +33,6 @@
     /**
      * @type {LocationMessage[]}
      */
-    let messages = [];
-
-    /**
-     * @type {LocationMessage[]}
-     */
     let markers = [debugMessage];
 
     /**
@@ -54,30 +49,26 @@
         socket.subscribe(/**
          * @param {LocationMessage} currentMessage
          */
+       
         (currentMessage) => {
             if (currentMessage) {
-                messages = [...messages, currentMessage];
-            }
-
-            if (currentMessage) {
-                let vehicleNumber = currentMessage.vehicleDescriptor.vehicleNumber;
-
-                if (markers.find(m => m.vehicleDescriptor.vehicleNumber === vehicleNumber)) {
-                    markers = markers.map(m => {
-                        if (m.vehicleDescriptor.vehicleNumber !== vehicleNumber) {
-                            return m;
-                        }
-
-                        if (vehicleNumber === selectedVehicle.vehicleDescriptor.vehicleNumber) {
-                            dots = [...dots, [m.position.longitude, m.position.latitude]];
-                        }
-
-                        return currentMessage;
-                    })
-                } else {
-                    markers = [...markers, currentMessage];
+                let vehicle_id = currentMessage.vehicleDescriptor.dataOwnerCode + ":" + currentMessage.vehicleDescriptor.vehicleNumber;
+            
+                let index = markers.findIndex(m => m.vehicleDescriptor.dataOwnerCode + ":" + m.vehicleDescriptor.vehicleNumber == vehicle_id);
+                if (index != -1) {
+                    markers.splice(index, 1);
                 }
+              
+                markers = [...markers, currentMessage];
+                if (selectedVehicle != null && selectedVehicle.vehicleDescriptor.dataOwnerCode + ":" + selectedVehicle.vehicleDescriptor.vehicleNumber  == vehicle_id) {
+                    selectedVehicle = currentMessage;
+                }
+
             }
+
+            
+         
+
         })
     })
 
@@ -92,7 +83,7 @@
             standardControls
             style={'https://api.maptiler.com/maps/basic-v2/style.json?key=OnrP8312jxPUqCynDmRh'}
     >
-        {#each markers as marker (marker.vehicleDescriptor.dataOwnerCode)}
+        {#each markers as marker (marker.vehicleDescriptor.dataOwnerCode + ":" + marker.vehicleDescriptor.vehicleNumber)}
             <Marker
                 lngLat={[marker.position.longitude, marker.position.latitude]}
                 class="grid h-8 w-8 place-items-center z-10"
@@ -131,7 +122,7 @@
                     </div>
                 </div>
             </button>
-            <div class="flex flex-col gap-2 p-4 shadow text-sm">
+            <div class="flex flex-col gap-2 p-4 shadow w-80 text-sm">
                 <div class="flex flex-col justify-center">
                     <h2 class="text-lg font-bold">Voertuiginformatie</h2>
                     <div class="w-full h-[2px] bg-blue-500"></div>
