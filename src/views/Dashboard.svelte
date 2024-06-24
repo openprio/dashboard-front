@@ -91,7 +91,8 @@
                     <div class="relative top-[2px] right-[12px] w-0 h-0
                       border-l-[12px] border-l-transparent
                       border-b-[29px] border-b-white
-                      border-r-[12px] border-r-transparent">
+                      border-r-[12px] border-r-transparent
+                     ">
                       <div class="text-[8px] text-gray-800 rotate-90">
                         {marker.vehicleDescriptor.dataOwnerCode}
                       </div>
@@ -168,6 +169,10 @@
                         <div class="flex gap-2 justify-between">
                             <h3>Snelheid</h3>
                             <span>{(selectedVehicle.position.speed*3.6).toFixed(1)}km/h</span>
+                        </div>
+                        <div class="flex gap-2 justify-between">
+                            <h3>Bearing</h3>
+                            <span>{(selectedVehicle.position.bearing).toFixed(1)}deg</span>
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Hdop</h3>
