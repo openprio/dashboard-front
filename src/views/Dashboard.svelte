@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import {MapLibre, Marker} from 'svelte-maplibre';
     import Navigation from "../components/Navigation.svelte";
     import { onMount } from 'svelte';
@@ -64,6 +64,39 @@
             ':' + pad(Math.abs(tzo) % 60);
     }
 
+    function doorStatus(doorStatus: number) {
+        switch(doorStatus) {
+            case 1: {
+                return "Open"
+            }
+            case 2: {
+                return "Closed"
+            }
+            case 3: {
+                return "Released"
+            }
+            default: {
+                return "Unknown"
+            }
+
+        }
+    }
+
+    function vehicleDirection(doorStatus: number) {
+        switch(doorStatus) {
+            case 1: {
+                return "A"
+            }
+            case 2: {
+                return "B"
+            }
+            default: {
+                return "Undefined"
+            }
+
+        }
+    }
+
 </script>
 <Navigation></Navigation>
 <div class="flex flex-col md:flex-row">
@@ -82,11 +115,27 @@
                 on:click={() => selectedVehicle = marker}
             >
                 <!-- Triangle -->
+                {#if selectedVehicle != null && marker.vehicleDescriptor.dataOwnerCode + ":" + marker.vehicleDescriptor.vehicleNumber == selectedVehicle.vehicleDescriptor.dataOwnerCode + ":" + selectedVehicle.vehicleDescriptor.vehicleNumber}
                 <div class="w-0 h-0
-                      border-l-[13px] border-l-transparent
-                      border-b-[32px] border-b-black
-                      border-r-[13px] border-r-transparent"
-                        style="transform: rotate({marker.position.bearing}deg);">
+                    border-l-[13px] border-l-transparent border-b-yellow-500
+                    border-b-[32px] border-r-[13px] border-r-transparent"
+                    style="transform: rotate({marker.position.bearing}deg);">
+
+                    <div class="relative top-[2px] right-[12px] w-0 h-0
+                        border-l-[12px] border-l-transparent
+                        border-b-[29px] border-b-white
+                        border-r-[12px] border-r-transparent
+                    ">
+                        <div class="text-[8px] text-gray-800 rotate-90">
+                        {marker.vehicleDescriptor.dataOwnerCode}
+                        </div>
+                    </div>
+                </div>
+                {:else}
+                <div class="w-0 h-0
+                      border-l-[13px] border-l-transparent border-b-black
+                      border-b-[32px] border-r-[13px] border-r-transparent"
+                    style="transform: rotate({marker.position.bearing}deg);">
 
                     <div class="relative top-[2px] right-[12px] w-0 h-0
                       border-l-[12px] border-l-transparent
@@ -98,6 +147,7 @@
                       </div>
                     </div>
                 </div>
+                {/if}
             </Marker>
         {/each}
         {#each dots as lngLat}
@@ -122,13 +172,18 @@
                 </div>
                 <div class="flex flex-col">
                     <h1 class="text-lg font-bold">Deurstatus</h1>
-                    {#if selectedVehicle.doorStatus == 2}
-                    <div class="w-96 bg-green-500 h-4"></div>
-                    {:else if selectedVehicle.doorStatus == 1} 
-                    <div class="w-96 bg-red-500 h-4"></div>
-                    {:else if selectedVehicle.doorStatus == 3} 
-                    <div class="w-96 bg-yellow-500 h-4"></div>
-                    {/if}
+                    <div class="flex gap-2 justify-between items-center">
+                        {#if selectedVehicle.doorStatus == 2}
+                        <span class="w-96 bg-green-500 h-4"></span>
+                        {:else if selectedVehicle.doorStatus == 1} 
+                        <span class="w-96 bg-red-500 h-4"></span>
+                        {:else if selectedVehicle.doorStatus == 3} 
+                        <span class="w-96 bg-yellow-500 h-4"></span>
+                        {:else}
+                        <span class="w-96 bg-gray-200 h-4"></span>
+                        {/if}
+                        {doorStatus(selectedVehicle.doorStatus)}
+                    </div>
                 </div>
                 <div class="flex flex-col">
                     <h1 class="text-lg font-bold">Voertuigbeschrijving</h1>
@@ -146,8 +201,8 @@
                             <span>{selectedVehicle.vehicleDescriptor.blockCode}</span>
                         </div>
                         <div class="flex gap-2 justify-between">
-                            <h3>Direction</h3>
-                            <span>{selectedVehicle.vehicleDescriptor.drivingDirection}</span>
+                            <h3>Actieve cabine</h3>
+                            <span>{vehicleDirection(selectedVehicle.vehicleDescriptor.drivingDirection)}</span>
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Aantal gekoppelde voertuigen</h3>
@@ -168,7 +223,7 @@
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Snelheid</h3>
-                            <span>{(selectedVehicle.position.speed*3.6).toFixed(1)}km/h</span>
+                            <span>{(selectedVehicle.position.speed*3.6).toFixed(0)}km/h</span>
                         </div>
                         <div class="flex gap-2 justify-between">
                             <h3>Bearing</h3>
