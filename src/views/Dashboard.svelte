@@ -67,10 +67,10 @@
     function doorStatus(doorStatus: number) {
         switch(doorStatus) {
             case 1: {
-                return "Open"
+                return "Closed"
             }
             case 2: {
-                return "Closed"
+                return "Open"
             }
             case 3: {
                 return "Released"
