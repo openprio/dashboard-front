@@ -16,20 +16,12 @@
     {#if $show_filters}
         <div class="flex flex-col p-4 gap-2 md:w-80">
             <div class="flex flex-col">
-                <label for="car-id" class="text-sm font-bold text-gray-800">Grootwagennummer</label>
-                <input id="car-id" type="text" class="rounded-sm border border-gray-500 px-2 py-0.5"/>
-            </div>
-            <div class="flex flex-col">
-                <label for="data-owner-id" class="text-sm font-bold text-gray-800">Data eigenaars code</label>
+                <label for="data-owner-id" class="text-sm font-bold text-gray-800">DataOwnerCode</label>
                 <input id="data-owner-id" type="text" class="rounded-sm border border-gray-500 px-2 py-0.5"/>
             </div>
             <div class="flex flex-col">
-                <label for="line-planning-id" class="text-sm font-bold text-gray-800">Lijnnummer</label>
-                <input id="line-planning-id" type="text" class="rounded-sm border border-gray-500 px-2 py-0.5"/>
-            </div>
-            <div class="flex flex-col">
-                <label for="journey-id" class="text-sm font-bold text-gray-800">Reisnummer</label>
-                <input id="journey-id" type="text" class="rounded-sm border border-gray-500 px-2 py-0.5"/>
+                <label for="car-id" class="text-sm font-bold text-gray-800">VehicleNumber</label>
+                <input id="car-id" type="text" class="rounded-sm border border-gray-500 px-2 py-0.5"/>
             </div>
             {#if $access_token}
                 <div class="flex flex-col">

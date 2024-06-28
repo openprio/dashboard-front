@@ -2,7 +2,8 @@
     import {MapLibre, Marker} from 'svelte-maplibre';
     import Navigation from "../components/Navigation.svelte";
     import { onMount } from 'svelte';
-    import socket from '../socket.js';
+    import subscribe from '../socket.js';
+    import subscribe_on_feedback from '../socket.js';
     import Filters from "../components/Filters.svelte";
 
     /**
@@ -20,8 +21,13 @@
      */
     let selectedVehicle = null;
 
+    /**
+     * @type {any[]}
+     */
+    let feedbackHistory = [];
+
     onMount(() => {
-        socket.subscribe(/**
+        subscribe.subscribe(/**
          * @param {LocationMessage} currentMessage
          */
        
@@ -40,11 +46,18 @@
                 }
 
             }
-
-            
-         
-
         })
+        subscribe.feedback(
+            (feedbackMessage) => {
+                if (feedbackMessage) {
+                    console.log(feedbackMessage);
+                    feedbackHistory = [feedbackMessage, ...feedbackHistory];
+                    console.log(history.length);
+                }
+             
+            }
+        )
+
     })
 
     function toIsoString(date) {
@@ -64,6 +77,17 @@
             ':' + pad(Math.abs(tzo) % 60);
     }
 
+    function formatTimeNicelyFirst(time) {
+        let timestamp = new Date(time);
+        return timestamp.getHours().toString().padStart(2, '0') + ":" + timestamp.getMinutes().toString().padStart(2, '0') + ":";
+    }
+
+    function formatTimeNicelySecond(time) {
+        let timestamp = new Date(time);
+        return timestamp.getSeconds().toString().padStart(2, '0') + "." + Math.floor(timestamp.getMilliseconds() / 100);
+    }
+    
+
     function doorStatus(doorStatus: number) {
         switch(doorStatus) {
             case 1: {
@@ -80,6 +104,21 @@
             }
 
         }
+    }
+
+    function numberToColor(num) {
+            if (num < 0 || num > 255) {
+                throw new Error("Number must be between 0 and 255");
+            }
+
+            const startColor = [0, 0, 255]; // Blue
+            const endColor = [255, 0, 0];  // Red
+
+            const r = startColor[0] + (endColor[0] - startColor[0]) * num / 255;
+            const g = startColor[1] + (endColor[1] - startColor[1]) * num / 255;
+            const b = startColor[2] + (endColor[2] - startColor[2]) * num / 255;
+
+            return `border-color: rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)});`;
     }
 
     function vehicleDirection(doorStatus: number) {
@@ -106,13 +145,17 @@
             zoom={10}
             class="w-full h-[94vh] mt-6 md:mt-0"
             standardControls
-            style={'https://api.maptiler.com/maps/basic-v2/style.json?key=OnrP8312jxPUqCynDmRh'}
+            style={'https://api.maptiler.com/maps/52e8038c-e9df-4d0e-a6cc-1269d04c9c19/style.json?key=wMttElGnvszMrzou5eQJ'}
     >
         {#each markers as marker (marker.vehicleDescriptor.dataOwnerCode + ":" + marker.vehicleDescriptor.vehicleNumber)}
             <Marker
                 lngLat={[marker.position.longitude, marker.position.latitude]}
                 class="grid h-8 w-8 place-items-center z-10"
-                on:click={() => selectedVehicle = marker}
+                on:click={() => {
+                    selectedVehicle = marker;
+                    subscribe.subscribe_on_feedback(marker.vehicleDescriptor.dataOwnerCode, marker.vehicleDescriptor.vehicleNumber);
+                    feedbackHistory = [];
+                }}
             >
                 <!-- Triangle -->
                 {#if selectedVehicle != null && marker.vehicleDescriptor.dataOwnerCode + ":" + marker.vehicleDescriptor.vehicleNumber == selectedVehicle.vehicleDescriptor.dataOwnerCode + ":" + selectedVehicle.vehicleDescriptor.vehicleNumber}
@@ -165,7 +208,7 @@
                     </div>
                 </div>
             </button>
-            <div class="flex flex-col gap-2 p-4 shadow w-80 text-sm">
+            <div class="flex flex-col gap-2 p-4 shadow w-80 text-sm h-[94vh]">
                 <div class="flex flex-col justify-center">
                     <h2 class="text-lg font-bold">Voertuiginformatie</h2>
                     <div class="w-full h-[2px] bg-blue-500"></div>
@@ -252,6 +295,45 @@
                     </div>
                 </div>
             </div>
+            <div class="flex flex-col gap-2 p-4 shadow w-96 text-sm h-[94vh] overflow-y-scroll">
+                <div class="flex flex-col justify-center ">
+                    <h2 class="text-lg font-bold">Log (SRM + SSM)</h2>
+                    <div class="w-full h-[2px] bg-blue-500"></div>
+                </div>
+                {#each feedbackHistory as historyItem}
+                    <div class="w-full bg-gray-200 rounded p-4">
+                        <div class="flex flex-row justify-between">
+                            <div>
+                        <span class="text-xs align-top">{formatTimeNicelyFirst(historyItem.timestamp)}</span><span class="text-base align-top">{formatTimeNicelySecond(historyItem.timestamp)}</span>
+                            </div>
+                        <div class="border rounded text-sm p-0.5 border-r-8" style="{numberToColor(historyItem.tlc_id)}">{historyItem.tlc_id}</div>
+                        {#if historyItem.type_of_msg == "srm"}
+                            <div class="flex flex-row">
+                            <div class="rounded-l bg-white p-0.5 text-sm border-gray-500 border-l border-t border-b">SRM</div>
+                            {#if historyItem.request_type == "priorityRequestNew" }
+                                <div class="bg-green-400 rounded-r p-0.5 text-sm">new</div>
+                            {:else if historyItem.request_type == "priorityRequestUpdate"}
+                                <div class="bg-yellow-500 rounded-r p-0.5 text-sm">update</div>
+                            {:else}
+                                <div class="bg-red-500 rounded-r p-0.5 text-sm">cancel</div>
+                            {/if}
+                            </div>
+                        {/if}
+                        </div>
+                        <div class="flex flex-row">
+                            ETA: &Delta;{((new Date(historyItem.eta_stopline).getTime() - new Date(historyItem.timestamp).getTime()) / 1000.0).toFixed(1)}s
+                            LaneConnectionID: {historyItem.lane_connection}
+                        </div>
+                        
+                        {historyItem.transit_status_loading}
+                        {historyItem.transit_status_door_open}
+                        {historyItem.transit_status_at_stopline}
+                        {historyItem.transit_schedule}
+                    </div>
+                {/each}
+        
+            </div>
+            
         </div>
     {/if}
 </div>
