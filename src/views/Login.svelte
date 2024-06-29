@@ -1,14 +1,14 @@
 <script>
+    import {firebaseAuth} from '../firebase.js';
     import { createEventDispatcher } from 'svelte';
+    
     import {getAuth, signInWithEmailAndPassword} from 'firebase/auth';
-    import {access_token} from "../auth";
     import Dashboard from "./Dashboard.svelte";
     import {current_page} from "../router.js";
     import LoadingSpinner from "../components/LoadingSpinner.svelte";
 
     const dispatch = createEventDispatcher();
 
-    const auth = getAuth(window.firebaseApp)
 
     let username = "";
     let password = "";
@@ -19,10 +19,11 @@
         signingIn = true;
 
         try {
-            const userCredentials = await signInWithEmailAndPassword(auth, username, password);
+            const userCredentials = await signInWithEmailAndPassword(firebaseAuth, username, password);
 
             if (userCredentials.user) {
-                access_token.set(userCredentials.user.accessToken);
+                // userCredentials.user.getIdToken
+                // access_token.set(userCredentials.user.accessToken);
                 current_page.set(Dashboard);
 
                 signingIn = false;

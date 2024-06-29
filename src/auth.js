@@ -1,11 +1,27 @@
+import {firebaseAuth, onAuthStateChanged} from './firebase';
 import { writable } from 'svelte/store';
 
-export const access_token = writable(localStorage.access_token);
 
-access_token.subscribe((token) => {
-    if (token === null || token === undefined) {
-        localStorage.removeItem('access_token');
-    } else {
-        localStorage.setItem('access_token', token);
-    }
+export const userCredential = writable(null);
+
+
+onAuthStateChanged(firebaseAuth, (user) => {
+  console.log(user);
+  if (user) {
+    // User is signed in
+    userCredential.set(user);
+  } else {
+    // User is signed out
+    userCredential.set(null);
+  }
 });
+
+export const getIdToken = async () => {
+    const user = firebaseAuth.currentUser;
+    if (user) {
+      return await user.getIdToken();
+    } else {
+      throw new Error("No user is signed in.");
+    }
+};
+

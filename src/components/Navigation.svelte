@@ -1,14 +1,13 @@
 <script>
-    import {access_token} from "../auth.js";
-    import {getAuth, signOut} from 'firebase/auth';
+    import {firebaseAuth} from '../firebase.js';
+    import {userCredential} from "../auth.js";
+    import {signOut} from 'firebase/auth';
     import Login from "../views/Login.svelte";
     import {current_page} from "../router.js";
 
-    const auth = getAuth(window.firebaseApp)
-
     function logout() {
-        signOut(auth);
-        $access_token = null;
+        signOut(firebaseAuth);
+        $userCredential = null;
     }
 
     function goToLogin() {
@@ -24,7 +23,7 @@
         </div>
         <div>
     </a>
-    {#if !$access_token}
+    {#if !$userCredential}
         <button on:click={goToLogin} class="flex flex-col items-center">
             <div class="flex flex-col items-center transition hover:scale-110">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 92 92">

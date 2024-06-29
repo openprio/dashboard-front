@@ -1,5 +1,5 @@
 <script>
-    import {access_token} from "../auth.js";
+    import {userCredential} from "../auth.js";
     import { writable } from 'svelte/store';
 
     let show_filters = writable(JSON.parse(localStorage.show_filters ?? "true"));
@@ -23,7 +23,7 @@
                 <label for="car-id" class="text-sm font-bold text-gray-800">VehicleNumber</label>
                 <input id="car-id" type="text" class="rounded-sm border border-gray-500 px-2 py-0.5"/>
             </div>
-            {#if $access_token}
+            {#if $userCredential}
                 <div class="flex flex-col">
                     <label for="start-date" class="text-sm font-bold text-gray-800">Startdatum</label>
                     <input id="start-date" type="datetime-local" class="rounded-sm border border-gray-500 px-2 py-0.5"/>

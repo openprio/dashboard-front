@@ -1,14 +1,12 @@
 import { writable } from 'svelte/store';
 import * as proto from "protobufjs";
 import mqtt from "mqtt"; 
-import {access_token} from "./auth.js";
+import { userCredential, getIdToken } from './auth';
 
 const messageStore = writable();
 const feedback = writable();
 let messageType;
 let filter_on_one_vehicle = null;
-
-
 
 let client = mqtt.connect('wss://mqtt-relay.openprio.nl/mqtt', {
     username:"public",
@@ -16,15 +14,31 @@ let client = mqtt.connect('wss://mqtt-relay.openprio.nl/mqtt', {
     clean:true
 });
 
-access_token.subscribe(token => {
-    client.end();
-    console.log(token);
+function anonymous_login() {
     client = mqtt.connect('wss://mqtt-relay.openprio.nl/mqtt', {
-        username:"jwt",
-        password: token,
+        username:"public",
+        password:"qnzci42ByX30XPnL8XTzdvKBkB1MtS6N9HH4TO9uSh8=",
         clean:true
     });
-    console.log("RECONNECTED!");
+
+}
+
+userCredential.subscribe(async userCredential => {
+    client.end();
+    if(userCredential != null) {
+        console.log(userCredential);
+        let token = await getIdToken();
+        client = mqtt.connect('wss://mqtt-relay.openprio.nl/mqtt', {
+            username:"jwt",
+            password: token,
+            clean:true
+        });
+        console.log("CONNECT");
+    } else {
+        anonymous_login();
+    }
+    register_callbacks(client);
+
 });
 
 export function subscribe_on_feedback(data_owner_code, vehicle_number) {
@@ -49,25 +63,29 @@ proto.load("openprio_pt_position_data.proto", function(err, root) {
     messageType = root.lookupType("LocationMessage");
 });
 
-
-client.on("connect", () => {
-    client.subscribe("/prod/pt/position/#", (err) => {
+function register_callbacks(client) {
+    client.on("connect", () => {
+        console.log("HIER");
+        client.subscribe("/prod/pt/position/#", (err) => {
+        });
     });
-});
-  
-client.on("message", (topic, message) => {
-    try {
-        if (topic.startsWith("/prod/pt/prg_feedback/")) {
-            feedback.set(JSON.parse(message.toString()));
-            return;
-        } 
+      
+    client.on("message", (topic, message) => {
+        console.log(topic);
+        try {
+            if (topic.startsWith("/prod/pt/prg_feedback/")) {
+                feedback.set(JSON.parse(message.toString()));
+                return;
+            } 
+    
+            let result = messageType.decode(new Uint8Array(message));
+            messageStore.set(result);
+        } catch (error) {
+            console.log('Couldn\'t read buffer.');
+        }
+    });
+}
 
-        let result = messageType.decode(new Uint8Array(message));
-        messageStore.set(result);
-    } catch (error) {
-        console.log('Couldn\'t read buffer.');
-    }
-});
 
 
 
