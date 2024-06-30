@@ -1,5 +1,7 @@
 <script lang="ts">
-    import {MapLibre, Marker} from 'svelte-maplibre';
+    import {MapLibre, Marker, CircleLayer, GeoJSON} from 'svelte-maplibre';
+    import type {Feature, FeatureCollection, Point} from 'geojson';
+    import {userCredential} from "../auth.js";
     import Navigation from "../components/Navigation.svelte";
     import { onMount } from 'svelte';
     import subscribe from '../socket.js';
@@ -12,11 +14,6 @@
     let markers = [];
 
     /**
-     * @type {[number, number][]}
-     */
-    let dots = [];
-
-    /**
      * @type {LocationMessage|null}
      */
     let selectedVehicle = null;
@@ -25,6 +22,21 @@
      * @type {any[]}
      */
     let feedbackHistory = [];
+
+    let locationHistory = [];
+
+    // $: locationHistoryGeoJSON = {
+
+    //     locationHistory.forEach
+    // };
+
+
+    // Create a FeatureCollection
+    let locationHistoryGeoJSON: FeatureCollection = {
+        type: 'FeatureCollection',
+        features: []
+    };
+
 
     onMount(() => {
         subscribe.subscribe(/**
@@ -43,6 +55,23 @@
                 markers = [...markers, currentMessage];
                 if (selectedVehicle != null && selectedVehicle.vehicleDescriptor.dataOwnerCode + ":" + selectedVehicle.vehicleDescriptor.vehicleNumber  == vehicle_id) {
                     selectedVehicle = currentMessage;
+                    let historyPoint: Feature<Point> = {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [currentMessage.position.longitude, currentMessage.position.latitude]
+                        },
+                        properties: {
+                            name: 'Sample Point'
+                        }
+                    };
+                    locationHistory = [...locationHistory, historyPoint];
+                    locationHistoryGeoJSON = {
+                        type: 'FeatureCollection',
+                        features: locationHistory
+                    };
+                    console.log(locationHistoryGeoJSON);
+
                 }
 
             }
@@ -147,6 +176,21 @@
             standardControls
             style={'https://api.maptiler.com/maps/52e8038c-e9df-4d0e-a6cc-1269d04c9c19/style.json?key=wMttElGnvszMrzou5eQJ'}
     >
+        <GeoJSON id="earthquakes" data={locationHistoryGeoJSON}>
+        <CircleLayer
+                id="cluster_circles"
+                applyToClusters={false}
+                paint={{
+                    // Use step expressions (https://maplibre.org/maplibre-gl-js-docs/style-spec/#expressions-step)
+                    // with three steps to implement three types of circles:
+                    //   * Blue, 20px circles when point count is less than 100
+                    //   * Yellow, 30px circles when point count is between 100 and 750
+                    //   * Pink, 40px circles when point count is greater than or equal to 750
+                    'circle-color': '#00641a',
+                    'circle-radius': 2
+                }}
+            />
+        </GeoJSON>
         {#each markers as marker (marker.vehicleDescriptor.dataOwnerCode + ":" + marker.vehicleDescriptor.vehicleNumber)}
             <Marker
                 lngLat={[marker.position.longitude, marker.position.latitude]}
@@ -192,9 +236,6 @@
                 </div>
                 {/if}
             </Marker>
-        {/each}
-        {#each dots as lngLat}
-            <Marker {lngLat} class="rounded bg-yellow-700 w-1 h-1"></Marker>
         {/each}
     </MapLibre>
     {#if selectedVehicle}
@@ -295,6 +336,7 @@
                     </div>
                 </div>
             </div>
+            {#if $userCredential}
             <div class="flex flex-col gap-2 p-4 shadow w-96 text-sm h-[94vh] overflow-y-scroll">
                 <div class="flex flex-col justify-center ">
                     <h2 class="text-lg font-bold">Log (SRM + SSM)</h2>
@@ -333,6 +375,7 @@
                 {/each}
         
             </div>
+            {/if}
             
         </div>
     {/if}

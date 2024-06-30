@@ -7,6 +7,7 @@ const messageStore = writable();
 const feedback = writable();
 let messageType;
 let filter_on_one_vehicle = null;
+let signedIn = false;
 
 let client = mqtt.connect('wss://mqtt-relay.openprio.nl/mqtt', {
     username:"public",
@@ -34,20 +35,25 @@ userCredential.subscribe(async userCredential => {
             clean:true
         });
         console.log("CONNECT");
+        signedIn = true;
     } else {
         anonymous_login();
+        signedIn = false;
     }
     register_callbacks(client);
 
 });
 
 export function subscribe_on_feedback(data_owner_code, vehicle_number) {
+    if (!signedIn) {
+        return;
+    }
+
     if (filter_on_one_vehicle != null) {
         client.unsubscribe(filter_on_one_vehicle);
         filter_on_one_vehicle = null;
     }
 
-    console.log("test");
     let topic = `/prod/pt/prg_feedback/${data_owner_code}/vehicle_number/${vehicle_number}`;
     client.subscribe(`/prod/pt/prg_feedback/${data_owner_code}/vehicle_number/${vehicle_number}`, (err) => {
     });
@@ -71,7 +77,6 @@ function register_callbacks(client) {
     });
       
     client.on("message", (topic, message) => {
-        console.log(topic);
         try {
             if (topic.startsWith("/prod/pt/prg_feedback/")) {
                 feedback.set(JSON.parse(message.toString()));
