@@ -25,6 +25,8 @@
 
     let locationHistory = [];
 
+    let filter_intersection = null;
+
     // $: locationHistoryGeoJSON = {
 
     //     locationHistory.forEach
@@ -36,6 +38,8 @@
         type: 'FeatureCollection',
         features: []
     };
+
+    $: filteredFeedbackHistory = filter_intersection == null ? feedbackHistory : feedbackHistory.filter(feedbackItem => feedbackItem.tlc_id === filter_intersection)
 
 
     onMount(() => {
@@ -81,13 +85,53 @@
                 if (feedbackMessage) {
                     console.log(feedbackMessage);
                     feedbackHistory = [feedbackMessage, ...feedbackHistory];
-                    console.log(history.length);
+
+                    let currentMessage = feedbackMessage.last_openprio_position;
+                    console.log( numberToColorHex(feedbackMessage.tlc_id));
+                    let historyPoint: Feature<Point> = {
+                        type: 'Feature',
+                        geometry: {
+                            type: 'Point',
+                            coordinates: [currentMessage.position.longitude, currentMessage.position.latitude]
+                        },
+                        properties: {
+                            "type_of_message": feedbackMessage.type_of_msg,
+                            "border-color": numberToColorHex(feedbackMessage.tlc_id),
+                            "color": "#22c55e" 
+                        }
+                    };
+                    locationHistory = [...locationHistory, historyPoint];
+                    locationHistoryGeoJSON = {
+                        type: 'FeatureCollection',
+                        features: locationHistory
+                    };
+                    console.log(locationHistoryGeoJSON);
+
+
+
                 }
              
             }
         )
 
     })
+
+    function resetLocationHistory() {
+        feedbackHistory = [];
+        locationHistory = [];
+        locationHistoryGeoJSON = {
+            type: 'FeatureCollection',
+            features: locationHistory
+        };
+    }
+
+    function ssm_to_color() {
+
+    }
+
+    function srm_to_color() {
+
+    }
 
     function toIsoString(date) {
         var tzo = -date.getTimezoneOffset(),
@@ -115,6 +159,10 @@
         let timestamp = new Date(time);
         return timestamp.getSeconds().toString().padStart(2, '0') + "." + Math.floor(timestamp.getMilliseconds() / 100);
     }
+
+    function formatTimeNicely(time) {
+        return formatTimeNicelyFirst(time) + formatTimeNicelySecond(time);
+    }
     
 
     function doorStatus(doorStatus: number) {
@@ -135,10 +183,21 @@
         }
     }
 
+    function numberToColorHex(num) {
+        num = num * 11 % 255;
+
+        const startColor = [0, 0, 255]; // Blue
+        const endColor = [255, 0, 0];   // Red
+
+        const r = startColor[0] + (endColor[0] - startColor[0]) * num / 255;
+        const g = startColor[1] + (endColor[1] - startColor[1]) * num / 255;
+        const b = startColor[2] + (endColor[2] - startColor[2]) * num / 255;
+
+        return `#${((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1).toUpperCase()}`;
+    }
+
     function numberToColor(num) {
-            if (num < 0 || num > 255) {
-                throw new Error("Number must be between 0 and 255");
-            }
+            num = num * 11 % 255;
 
             const startColor = [0, 0, 255]; // Blue
             const endColor = [255, 0, 0];  // Red
@@ -186,8 +245,19 @@
                     //   * Blue, 20px circles when point count is less than 100
                     //   * Yellow, 30px circles when point count is between 100 and 750
                     //   * Pink, 40px circles when point count is greater than or equal to 750
-                    'circle-color': '#00641a',
-                    'circle-radius': 2
+                    'circle-color': ["get", "color"],
+                    'circle-stroke-color': ["get", "border-color"],
+                    'circle-stroke-width': [
+                        "case", 
+                        ["has", "type_of_message"], 1,
+                        0
+                    ],
+                    'circle-radius': [
+                        "case", 
+                        ["==", ["get", "type_of_message"], "ssm"], 8,
+                        ["==", ["get", "type_of_message"], "srm"], 4,
+                        2
+                    ]
                 }}
             />
         </GeoJSON>
@@ -198,7 +268,7 @@
                 on:click={() => {
                     selectedVehicle = marker;
                     subscribe.subscribe_on_feedback(marker.vehicleDescriptor.dataOwnerCode, marker.vehicleDescriptor.vehicleNumber);
-                    feedbackHistory = [];
+                    resetLocationHistory();
                 }}
             >
                 <!-- Triangle -->
@@ -339,44 +409,68 @@
             {#if $userCredential}
             <div class="flex flex-col gap-2 p-4 shadow w-96 text-sm h-[94vh] overflow-y-scroll">
                 <div class="flex flex-col justify-center ">
-                    <h2 class="text-lg font-bold">Log (SRM + SSM)</h2>
+                    <div class="flex flex-row justify-between m-1">
+                        <h2 class="text-lg font-bold">Log (SRM + SSM)</h2>
+                        {#if filter_intersection != null }
+                        <button class="border rounded text-sm p-0.5 border-r-8" style="{numberToColor(filter_intersection)}" on:click={() => {filter_intersection = null}}>
+                            {filter_intersection}</button>
+                        {/if}
+                    </div>
                     <div class="w-full h-[2px] bg-blue-500"></div>
                 </div>
-                {#each feedbackHistory as historyItem}
+                {#each filteredFeedbackHistory as historyItem}
                     <div class="w-full bg-gray-200 rounded p-4">
                         <div class="flex flex-row justify-between">
                             <div>
                         <span class="text-xs align-top">{formatTimeNicelyFirst(historyItem.timestamp)}</span><span class="text-base align-top">{formatTimeNicelySecond(historyItem.timestamp)}</span>
                             </div>
-                        <div class="border rounded text-sm p-0.5 border-r-8" style="{numberToColor(historyItem.tlc_id)}">{historyItem.tlc_id}</div>
+                        <button class="border rounded text-sm p-0.5 border-r-8" style="{numberToColor(historyItem.tlc_id)}" on:click={() => {filter_intersection = historyItem.tlc_id}}>{historyItem.tlc_id}</button>
                         {#if historyItem.type_of_msg == "srm"}
                             <div class="flex flex-row">
                             <div class="rounded-l bg-white p-0.5 text-sm border-gray-500 border-l border-t border-b">SRM</div>
                             {#if historyItem.request_type == "priorityRequestNew" }
-                                <div class="bg-green-400 rounded-r p-0.5 text-sm">new</div>
+                                <div class="bg-green-400 rounded-r p-0.5 text-sm">NEW</div>
                             {:else if historyItem.request_type == "priorityRequestUpdate"}
-                                <div class="bg-yellow-500 rounded-r p-0.5 text-sm">update</div>
+                                <div class="bg-yellow-500 rounded-r p-0.5 text-sm">UPDATE</div>
                             {:else}
-                                <div class="bg-red-500 rounded-r p-0.5 text-sm">cancel</div>
+                                <div class="bg-red-500 rounded-r p-0.5 text-sm">CANCEL</div>
                             {/if}
                             </div>
+                        {:else if historyItem.type_of_msg == "ssm"}
+                            <div class="flex flex-row">
+                            <div class="rounded-l bg-white p-0.5 text-sm border-gray-500 border-l border-t border-b">SSM</div>
+                            {#if historyItem.prioritization_response_status == "GRANTED" }
+                                <div class="bg-green-600 rounded-r p-1 text-sm">{historyItem.prioritization_response_status}</div>
+                            {:else if historyItem.prioritization_response_status == "REQUESTED"}
+                                <div class="bg-green-200 rounded-r p-1 text-sm">{historyItem.prioritization_response_status}</div>
+                            {:else if historyItem.prioritization_response_status == "REJECTED"}
+                                <div class="bg-red-700 rounded-r p-1 text-sm">{historyItem.prioritization_response_status}</div>
+                            {:else}
+                                <div class="bg-blue-100 rounded-r p-1 text-sm">{historyItem.prioritization_response_status}</div>
+                            {/if}
+                            </div>  
                         {/if}
                         </div>
+                        <div class="flex flex-row justify-between">
+                            <span>ETA: {formatTimeNicely(historyItem.eta_stopline)}  (&Delta;{((new Date(historyItem.eta_stopline).getTime() - new Date(historyItem.timestamp).getTime()) / 1000.0).toFixed(1)}s)</span>
+                            <span>Latency: {historyItem.latency}ms</span>
+                        </div>
                         <div class="flex flex-row">
-                            ETA: &Delta;{((new Date(historyItem.eta_stopline).getTime() - new Date(historyItem.timestamp).getTime()) / 1000.0).toFixed(1)}s
                             LaneConnectionID: {historyItem.lane_connection}
                         </div>
+                        {#if historyItem.type_of_msg == "srm"}
+                        <div class="flex flex-row justify-between">
+                            <span>{historyItem.transit_status_loading}</span>
+                            <span>{historyItem.transit_status_door_open}</span>
+                            <span>{historyItem.transit_status_at_stopline}</span>
+                            <span>{historyItem.transit_schedule}</span>
+                        </div>
+                        {/if}
                         
-                        {historyItem.transit_status_loading}
-                        {historyItem.transit_status_door_open}
-                        {historyItem.transit_status_at_stopline}
-                        {historyItem.transit_schedule}
                     </div>
-                {/each}
-        
+                {/each}        
             </div>
             {/if}
-            
         </div>
     {/if}
 </div>
