@@ -39,8 +39,14 @@
         features: []
     };
 
-    $: filteredFeedbackHistory = filter_intersection == null ? feedbackHistory : feedbackHistory.filter(feedbackItem => feedbackItem.tlc_id === filter_intersection)
-
+    $: filteredFeedbackHistory = filter_intersection == null ? feedbackHistory : feedbackHistory.filter(feedbackItem => feedbackItem.tlc_id === filter_intersection);
+    $: filteredLocationHistory = filter_intersection == null ? locationHistory : locationHistory.filter(locationHistoryItem => locationHistoryItem.properties.tlc_id === filter_intersection);
+    $: { locationHistoryGeoJSON = 
+        {
+            type: 'FeatureCollection',
+            features: filteredLocationHistory
+        }
+    };
 
     onMount(() => {
         subscribe.subscribe(/**
@@ -70,11 +76,11 @@
                         }
                     };
                     locationHistory = [...locationHistory, historyPoint];
-                    locationHistoryGeoJSON = {
-                        type: 'FeatureCollection',
-                        features: locationHistory
-                    };
-                    console.log(locationHistoryGeoJSON);
+                    // locationHistoryGeoJSON = {
+                    //     type: 'FeatureCollection',
+                    //     features: locationHistory
+                    // };
+
 
                 }
 
@@ -97,7 +103,8 @@
                         properties: {
                             "type_of_message": feedbackMessage.type_of_msg,
                             "border-color": numberToColorHex(feedbackMessage.tlc_id),
-                            "color": "#22c55e" 
+                            "color": getFeedbackColor(feedbackMessage),
+                            "tlc_id": feedbackMessage.tlc_id
                         }
                     };
                     locationHistory = [...locationHistory, historyPoint];
@@ -105,10 +112,6 @@
                         type: 'FeatureCollection',
                         features: locationHistory
                     };
-                    console.log(locationHistoryGeoJSON);
-
-
-
                 }
              
             }
@@ -125,12 +128,34 @@
         };
     }
 
-    function ssm_to_color() {
-
+    function getFeedbackColor(msg) {
+        if (msg.type_of_msg == "srm") {
+            return srm_to_color(msg.request_type);
+        } 
+        return ssm_to_color(msg.prioritization_response_status);
     }
 
-    function srm_to_color() {
+    function ssm_to_color(prioritization_response_status) {
+        if (prioritization_response_status == "GRANTED") {
+            return "#16a34a";
+        }
+        if (prioritization_response_status == "REQUESTED") {
+            return "#bbf7d0";
+        }
+        if (prioritization_response_status == "REJECTED") {
+            return "#b91c1c";
+        }
+        return "#dbeafe";
+    }
 
+    function srm_to_color(request_type) {
+        if (request_type == "priorityRequestNew") {
+            return "#4ade80";
+        }
+        if (request_type == "priorityRequestUpdate") {
+            return "#eab308";
+        }
+        return "#ef4444";
     }
 
     function toIsoString(date) {
@@ -183,30 +208,13 @@
         }
     }
 
-    function numberToColorHex(num) {
-        num = num * 11 % 255;
-
-        const startColor = [0, 0, 255]; // Blue
-        const endColor = [255, 0, 0];   // Red
-
-        const r = startColor[0] + (endColor[0] - startColor[0]) * num / 255;
-        const g = startColor[1] + (endColor[1] - startColor[1]) * num / 255;
-        const b = startColor[2] + (endColor[2] - startColor[2]) * num / 255;
-
-        return `#${((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1).toUpperCase()}`;
+    function numberToColorHex(number) {
+        let colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#000000'];
+        return colors[number % colors.length];
     }
 
     function numberToColor(num) {
-            num = num * 11 % 255;
-
-            const startColor = [0, 0, 255]; // Blue
-            const endColor = [255, 0, 0];  // Red
-
-            const r = startColor[0] + (endColor[0] - startColor[0]) * num / 255;
-            const g = startColor[1] + (endColor[1] - startColor[1]) * num / 255;
-            const b = startColor[2] + (endColor[2] - startColor[2]) * num / 255;
-
-            return `border-color: rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)});`;
+            return `border-color: ${numberToColorHex(num)};`;
     }
 
     function vehicleDirection(doorStatus: number) {
