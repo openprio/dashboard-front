@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {MapLibre, Marker, CircleLayer, GeoJSON, LineLayer} from 'svelte-maplibre';
+    import {MapLibre, Marker, CircleLayer, GeoJSON, LineLayer, FillLayer} from 'svelte-maplibre';
     import type {Feature, FeatureCollection, Point} from 'geojson';
     import {userCredential} from "../auth.js";
     import Navigation from "../components/Navigation.svelte";
@@ -293,13 +293,19 @@
 
         <GeoJSON id="intersections" data={intersectionsGeoJSON}>
             
+            <FillLayer
+            paint={{
+                'fill-color': ["get", "color"],
+                'fill-opacity': 0.05,
+            }}
+            />
+  
             <LineLayer
                 layout={{ 'line-cap': 'round', 'line-join': 'round' }}
                 paint={{ 
                     'line-color': ["get", "color"], 
-                    'line-width': 2,
-                    'line-dasharray': [2, 5],
-                    'line-opacity': 0.5
+                    'line-width': 1,
+                    'line-dasharray': [2, 5]
                 }}
                 beforeLayerType="symbol"
             />
