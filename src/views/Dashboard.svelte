@@ -1,5 +1,5 @@
 <script lang="ts">
-    import {MapLibre, Marker, CircleLayer, GeoJSON} from 'svelte-maplibre';
+    import {MapLibre, Marker, CircleLayer, GeoJSON, LineLayer} from 'svelte-maplibre';
     import type {Feature, FeatureCollection, Point} from 'geojson';
     import {userCredential} from "../auth.js";
     import Navigation from "../components/Navigation.svelte";
@@ -7,6 +7,7 @@
     import subscribe from '../socket.js';
     import subscribe_on_feedback from '../socket.js';
     import Filters from "../components/Filters.svelte";
+    import {circle} from '@turf/circle';
 
     /**
      * @type {LocationMessage[]}
@@ -27,17 +28,16 @@
 
     let filter_intersection = null;
 
-    // $: locationHistoryGeoJSON = {
-
-    //     locationHistory.forEach
-    // };
-
-
     // Create a FeatureCollection
     let locationHistoryGeoJSON: FeatureCollection = {
         type: 'FeatureCollection',
         features: []
     };
+
+    let intersectionsGeoJSON: FeatureCollection = {
+        type: 'FeatureCollection',
+        features: []
+    };;
 
     $: filteredFeedbackHistory = filter_intersection == null ? feedbackHistory : feedbackHistory.filter(feedbackItem => feedbackItem.tlc_id === filter_intersection);
     $: filteredLocationHistory = filter_intersection == null ? locationHistory : locationHistory.filter(locationHistoryItem => locationHistoryItem.properties.tlc_id === filter_intersection);
@@ -49,6 +49,23 @@
     };
 
     onMount(() => {
+        fetch(
+            "/intersections.geojson"
+        )
+        .then((response) => response.json())
+        .then((geojson) => {
+            let features = geojson.features.map(feature => {
+                console.log(feature);
+                var options = {properties: {color: numberToColorHex(feature.properties.intersectionID)}};
+                return circle(feature.geometry.coordinates, 0.15, options);     
+            });
+            intersectionsGeoJSON = {
+                type: 'FeatureCollection',
+                features: features
+            };
+            console.log(intersectionsGeoJSON);
+        })
+
         subscribe.subscribe(/**
          * @param {LocationMessage} currentMessage
          */
@@ -132,6 +149,9 @@
         if (msg.type_of_msg == "srm") {
             return srm_to_color(msg.request_type);
         } 
+        if (msg.pbc_rejection != "NO_ERROR") {
+            return "#dc2626";
+        }
         return ssm_to_color(msg.prioritization_response_status);
     }
 
@@ -243,7 +263,7 @@
             standardControls
             style={'https://api.maptiler.com/maps/52e8038c-e9df-4d0e-a6cc-1269d04c9c19/style.json?key=wMttElGnvszMrzou5eQJ'}
     >
-        <GeoJSON id="earthquakes" data={locationHistoryGeoJSON}>
+        <GeoJSON id="positions" data={locationHistoryGeoJSON}>
         <CircleLayer
                 id="cluster_circles"
                 applyToClusters={false}
@@ -269,6 +289,25 @@
                 }}
             />
         </GeoJSON>
+
+
+        <GeoJSON id="intersections" data={intersectionsGeoJSON}>
+            
+            <LineLayer
+                layout={{ 'line-cap': 'round', 'line-join': 'round' }}
+                paint={{ 
+                    'line-color': ["get", "color"], 
+                    'line-width': 2,
+                    'line-dasharray': [2, 5],
+                    'line-opacity': 0.5
+                }}
+                beforeLayerType="symbol"
+            />
+  
+        </GeoJSON>
+        
+
+
         {#each markers as marker (marker.vehicleDescriptor.dataOwnerCode + ":" + marker.vehicleDescriptor.vehicleNumber)}
             <Marker
                 lngLat={[marker.position.longitude, marker.position.latitude]}
@@ -453,26 +492,30 @@
                                 <div class="bg-green-200 rounded-r p-1 text-sm">{historyItem.prioritization_response_status}</div>
                             {:else if historyItem.prioritization_response_status == "REJECTED"}
                                 <div class="bg-red-700 rounded-r p-1 text-sm">{historyItem.prioritization_response_status}</div>
+                            {:else if historyItem.pbc_rejection != "NO_ERROR"}
+                                <div class="bg-red-600 rounded-r p-1 text-sm">{historyItem.pbc_rejection}</div>
                             {:else}
                                 <div class="bg-blue-100 rounded-r p-1 text-sm">{historyItem.prioritization_response_status}</div>
                             {/if}
                             </div>  
                         {/if}
                         </div>
-                        <div class="flex flex-row justify-between">
-                            <span>ETA: {formatTimeNicely(historyItem.eta_stopline)}  (&Delta;{((new Date(historyItem.eta_stopline).getTime() - new Date(historyItem.timestamp).getTime()) / 1000.0).toFixed(1)}s)</span>
-                            <span>Latency: {historyItem.latency}ms</span>
-                        </div>
-                        <div class="flex flex-row">
-                            LaneConnectionID: {historyItem.lane_connection}
-                        </div>
-                        {#if historyItem.type_of_msg == "srm"}
-                        <div class="flex flex-row justify-between">
-                            <span>{historyItem.transit_status_loading}</span>
-                            <span>{historyItem.transit_status_door_open}</span>
-                            <span>{historyItem.transit_status_at_stopline}</span>
-                            <span>{historyItem.transit_schedule}</span>
-                        </div>
+                        {#if historyItem.type_of_msg == "srm" || historyItem.pbc_rejection == "NO_ERROR"}
+                            <div class="flex flex-row justify-between">
+                                <span>ETA: {formatTimeNicely(historyItem.eta_stopline)}  (&Delta;{((new Date(historyItem.eta_stopline).getTime() - new Date(historyItem.timestamp).getTime()) / 1000.0).toFixed(1)}s)</span>
+                                <span>Latency: {historyItem.latency}ms</span>
+                            </div>
+                            <div class="flex flex-row">
+                                LaneConnectionID: {historyItem.lane_connection}
+                            </div>
+                            {#if historyItem.type_of_msg == "srm"}
+                            <div class="flex flex-row justify-between">
+                                <span>{historyItem.transit_status_loading}</span>
+                                <span>{historyItem.transit_status_door_open}</span>
+                                <span>{historyItem.transit_status_at_stopline}</span>
+                                <span>{historyItem.transit_schedule}</span>
+                            </div>
+                            {/if}
                         {/if}
                         
                     </div>

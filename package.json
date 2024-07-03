@@ -17,6 +17,8 @@
     "vite": "^5.0.8"
   },
   "dependencies": {
+    "@turf/circle": "^7.0.0",
+    "circle": "^1.0.0",
     "firebase": "^10.7.1",
     "mqtt": "^5.7.2",
     "protobufjs": "^7.2.6",
