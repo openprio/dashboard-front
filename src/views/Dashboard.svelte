@@ -304,7 +304,7 @@
                 layout={{ 'line-cap': 'round', 'line-join': 'round' }}
                 paint={{ 
                     'line-color': ["get", "color"], 
-                    'line-width': 1,
+                    'line-width': 3,
                     'line-dasharray': [2, 5]
                 }}
                 beforeLayerType="symbol"
