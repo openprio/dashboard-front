@@ -1,9 +1,16 @@
-<script>
-  import {current_page} from "./router.js";
+<script lang="ts">
+  import { Router, Link, Route } from "svelte-routing";
+  import Dashboard from "./routes/Dashboard.svelte";
+  import Login from "./routes/Login.svelte";
 
-  const SvelteComponent = $derived($current_page);
+
+  export let url = "";
 </script>
 
-<main class="flex flex-col">
-  <SvelteComponent />
-</main>
+
+<Router {url}>
+  <div>
+    <Route path="/login" component={Login} />
+    <Route path="/"><Dashboard /></Route>
+  </div>
+</Router>

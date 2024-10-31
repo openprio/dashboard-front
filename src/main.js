@@ -1,7 +1,6 @@
 import './app.css'
 import App from './App.svelte'
-// Import the functions you need from the SDKs you need
-import Dashboard from "./views/Dashboard.svelte";
+
 import { mount } from "svelte";
 
 // TODO: Add SDKs for Firebase products that you want to use

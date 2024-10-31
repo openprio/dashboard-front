@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { preventDefault } from 'svelte/legacy';
 
     import {firebaseAuth} from '../firebase.js';
@@ -6,8 +6,8 @@
     
     import {getAuth, signInWithEmailAndPassword} from 'firebase/auth';
     import Dashboard from "./Dashboard.svelte";
-    import {current_page} from "../router.js";
     import LoadingSpinner from "../components/LoadingSpinner.svelte";
+    import { navigate } from "svelte-routing";
 
     const dispatch = createEventDispatcher();
 
@@ -26,7 +26,7 @@
             if (userCredentials.user) {
                 // userCredentials.user.getIdToken
                 // access_token.set(userCredentials.user.accessToken);
-                current_page.set(Dashboard);
+                navigate("/", { replace: true });
 
                 signingIn = false;
                 dispatch('authorize');
