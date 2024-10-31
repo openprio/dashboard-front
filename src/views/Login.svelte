@@ -1,4 +1,6 @@
 <script>
+    import { preventDefault } from 'svelte/legacy';
+
     import {firebaseAuth} from '../firebase.js';
     import { createEventDispatcher } from 'svelte';
     
@@ -10,10 +12,10 @@
     const dispatch = createEventDispatcher();
 
 
-    let username = "";
-    let password = "";
-    let showErrors = false;
-    let signingIn = false
+    let username = $state("");
+    let password = $state("");
+    let showErrors = $state(false);
+    let signingIn = $state(false)
 
     async function login() {
         signingIn = true;
@@ -44,7 +46,7 @@
             <span class="text-8xl text-white">OpenPrio</span>
             <div class="w-96 h-[5px] bg-blue-500"></div>
         </div>
-        <form on:submit|preventDefault={login} class="flex flex-col gap-5 items-center">
+        <form onsubmit={preventDefault(login)} class="flex flex-col gap-5 items-center">
             <div class="flex flex-col gap-1">
                 <input id="username" placeholder="Username or email.." type="text" bind:value={username} class="bg-white rounded-sm px-2 py-1 border border-gray-500"/>
             </div>

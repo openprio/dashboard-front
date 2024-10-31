@@ -39,7 +39,7 @@
             </div>
         </div>
     {/if}
-    <button class="group bg-gray-400 hover:bg-gray-700 h-6 w-full md:h-full md:w-4 text-white flex items-center justify-center" on:click={toggleShowFilters}>
+    <button class="group bg-gray-400 hover:bg-gray-700 h-6 w-full md:h-full md:w-4 text-white flex items-center justify-center" onclick={toggleShowFilters}>
         <div class="rotate-90 md:rotate-0">
             <div class="w-0 h-0 {$show_filters ? '-rotate-90' : 'rotate-90'}
                       border-l-[4px] border-l-transparent

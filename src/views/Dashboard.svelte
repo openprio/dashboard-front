@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { run } from 'svelte/legacy';
+
     import {MapLibre, Marker, CircleLayer, GeoJSON, LineLayer, FillLayer} from 'svelte-maplibre';
     import type {Feature, FeatureCollection, Point} from 'geojson';
     import {userCredential} from "../auth.js";
@@ -12,41 +14,41 @@
     /**
      * @type {LocationMessage[]}
      */
-    let markers = [];
+    let markers = $state([]);
 
     /**
      * @type {LocationMessage|null}
      */
-    let selectedVehicle = null;
+    let selectedVehicle = $state(null);
 
     /**
      * @type {any[]}
      */
-    let feedbackHistory = [];
+    let feedbackHistory = $state([]);
 
-    let locationHistory = [];
+    let locationHistory = $state([]);
 
-    let filter_intersection = null;
+    let filter_intersection = $state(null);
 
     // Create a FeatureCollection
-    let locationHistoryGeoJSON: FeatureCollection = {
+    let locationHistoryGeoJSON: FeatureCollection = $state({
         type: 'FeatureCollection',
         features: []
-    };
+    });
 
-    let intersectionsGeoJSON: FeatureCollection = {
+    let intersectionsGeoJSON: FeatureCollection = $state({
         type: 'FeatureCollection',
         features: []
-    };;
+    });;
 
-    $: filteredFeedbackHistory = filter_intersection == null ? feedbackHistory : feedbackHistory.filter(feedbackItem => feedbackItem.tlc_id === filter_intersection);
-    $: filteredLocationHistory = filter_intersection == null ? locationHistory : locationHistory.filter(locationHistoryItem => locationHistoryItem.properties.tlc_id === filter_intersection);
-    $: { locationHistoryGeoJSON = 
+    let filteredFeedbackHistory = $derived(filter_intersection == null ? feedbackHistory : feedbackHistory.filter(feedbackItem => feedbackItem.tlc_id === filter_intersection));
+    let filteredLocationHistory = $derived(filter_intersection == null ? locationHistory : locationHistory.filter(locationHistoryItem => locationHistoryItem.properties.tlc_id === filter_intersection));
+    run(() => { locationHistoryGeoJSON = 
         {
             type: 'FeatureCollection',
             features: filteredLocationHistory
         }
-    };
+    });;
 
     onMount(() => {
         fetch(
@@ -363,7 +365,7 @@
     </MapLibre>
     {#if selectedVehicle}
         <div class="bg-gray-100 flex flex-col md:flex-row z-30 absolute md:static bottom-0 w-full md:w-auto">
-            <button class="group bg-gray-400 hover:bg-gray-700 h-6 w-full md:h-full md:w-5 text-white flex items-center justify-center" on:click={() => selectedVehicle = null}>
+            <button class="group bg-gray-400 hover:bg-gray-700 h-6 w-full md:h-full md:w-5 text-white flex items-center justify-center" onclick={() => selectedVehicle = null}>
                 <div class="rotate-90 md:rotate-0">
                     <div class="w-0 h-0 rotate-90
                       border-l-[4px] border-l-transparent
@@ -464,8 +466,8 @@
                 <div class="flex flex-col justify-center ">
                     <div class="flex flex-row justify-between m-1">
                         <h2 class="text-lg font-bold">Log (SRM + SSM)</h2>
-                        {#if filter_intersection != null }
-                        <button class="border rounded text-sm p-0.5 border-r-8" style="{numberToColor(filter_intersection)}" on:click={() => {filter_intersection = null}}>
+                        {#if filter_intersection != null}
+                        <button class="border rounded text-sm p-0.5 border-r-8" style="{numberToColor(filter_intersection)}" onclick={() => {filter_intersection = null}}>
                             {filter_intersection}</button>
                         {/if}
                     </div>
@@ -477,11 +479,11 @@
                             <div>
                         <span class="text-xs align-top">{formatTimeNicelyFirst(historyItem.timestamp)}</span><span class="text-base align-top">{formatTimeNicelySecond(historyItem.timestamp)}</span>
                             </div>
-                        <button class="border rounded text-sm p-0.5 border-r-8" style="{numberToColor(historyItem.tlc_id)}" on:click={() => {filter_intersection = historyItem.tlc_id}}>{historyItem.tlc_id}</button>
+                        <button class="border rounded text-sm p-0.5 border-r-8" style="{numberToColor(historyItem.tlc_id)}" onclick={() => {filter_intersection = historyItem.tlc_id}}>{historyItem.tlc_id}</button>
                         {#if historyItem.type_of_msg == "srm"}
                             <div class="flex flex-row">
                             <div class="rounded-l bg-white p-0.5 text-sm border-gray-500 border-l border-t border-b">SRM</div>
-                            {#if historyItem.request_type == "priorityRequestNew" }
+                            {#if historyItem.request_type == "priorityRequestNew"}
                                 <div class="bg-green-400 rounded-r p-0.5 text-sm">NEW</div>
                             {:else if historyItem.request_type == "priorityRequestUpdate"}
                                 <div class="bg-yellow-500 rounded-r p-0.5 text-sm">UPDATE</div>
@@ -492,7 +494,7 @@
                         {:else if historyItem.type_of_msg == "ssm"}
                             <div class="flex flex-row">
                             <div class="rounded-l bg-white p-0.5 text-sm border-gray-500 border-l border-t border-b">SSM</div>
-                            {#if historyItem.prioritization_response_status == "GRANTED" }
+                            {#if historyItem.prioritization_response_status == "GRANTED"}
                                 <div class="bg-green-600 rounded-r p-1 text-sm">{historyItem.prioritization_response_status}</div>
                             {:else if historyItem.prioritization_response_status == "REQUESTED"}
                                 <div class="bg-green-200 rounded-r p-1 text-sm">{historyItem.prioritization_response_status}</div>

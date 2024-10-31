@@ -1,7 +1,9 @@
 <script>
   import {current_page} from "./router.js";
+
+  const SvelteComponent = $derived($current_page);
 </script>
 
 <main class="flex flex-col">
-  <svelte:component this={$current_page} />
+  <SvelteComponent />
 </main>
