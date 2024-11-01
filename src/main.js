@@ -10,5 +10,5 @@ const app = mount(App, {
   target: document.getElementById('app'),
 })
 
-window.component = Dashboard;
+window.component = App;
 export default app
