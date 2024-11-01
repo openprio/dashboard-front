@@ -1,15 +1,13 @@
 <script lang="ts">
-  import { run } from 'svelte/legacy';
 
     import {MapLibre, Marker, CircleLayer, GeoJSON, LineLayer, FillLayer} from 'svelte-maplibre';
     import type {Feature, FeatureCollection, Point} from 'geojson';
     import {userCredential} from "../auth.js";
     import Navigation from "../components/Navigation.svelte";
-    import { onMount } from 'svelte';
     import subscribe from '../socket.js';
-    import subscribe_on_feedback from '../socket.js';
     import Filters from "../components/Filters.svelte";
     import {circle} from '@turf/circle';
+    import { onMount } from 'svelte';
 
     /**
      * @type {LocationMessage[]}
@@ -43,12 +41,7 @@
 
     let filteredFeedbackHistory = $derived(filter_intersection == null ? feedbackHistory : feedbackHistory.filter(feedbackItem => feedbackItem.tlc_id === filter_intersection));
     let filteredLocationHistory = $derived(filter_intersection == null ? locationHistory : locationHistory.filter(locationHistoryItem => locationHistoryItem.properties.tlc_id === filter_intersection));
-    run(() => { locationHistoryGeoJSON = 
-        {
-            type: 'FeatureCollection',
-            features: filteredLocationHistory
-        }
-    });;
+
 
     onMount(() => {
         fetch(
@@ -65,9 +58,10 @@
                 type: 'FeatureCollection',
                 features: features
             };
-            console.log(intersectionsGeoJSON);
         })
+    })
 
+    onMount(() => {
         subscribe.subscribe(/**
          * @param {LocationMessage} currentMessage
          */
@@ -78,10 +72,11 @@
             
                 let index = markers.findIndex(m => m.vehicleDescriptor.dataOwnerCode + ":" + m.vehicleDescriptor.vehicleNumber == vehicle_id);
                 if (index != -1) {
-                    markers.splice(index, 1);
+                    markers[index] = currentMessage;
+                } else {
+                    markers.push(currentMessage);
                 }
               
-                markers = [...markers, currentMessage];
                 if (selectedVehicle != null && selectedVehicle.vehicleDescriptor.dataOwnerCode + ":" + selectedVehicle.vehicleDescriptor.vehicleNumber  == vehicle_id) {
                     selectedVehicle = currentMessage;
                     let historyPoint: Feature<Point> = {
@@ -94,22 +89,19 @@
                             name: 'Sample Point'
                         }
                     };
-                    locationHistory = [...locationHistory, historyPoint];
-                    // locationHistoryGeoJSON = {
-                    //     type: 'FeatureCollection',
-                    //     features: locationHistory
-                    // };
-
-
+                    locationHistory.push(historyPoint);
                 }
 
             }
         })
-        subscribe.feedback(
+    })
+
+    onMount(() => {
+        console.log("TRIGGERED feedbackmessage subscription")
+         subscribe.feedback(
             (feedbackMessage) => {
                 if (feedbackMessage) {
-                    console.log(feedbackMessage);
-                    feedbackHistory = [feedbackMessage, ...feedbackHistory];
+                    feedbackHistory.unshift(feedbackMessage);
 
                     let currentMessage = feedbackMessage.last_openprio_position;
                     console.log( numberToColorHex(feedbackMessage.tlc_id));
@@ -126,7 +118,7 @@
                             "tlc_id": feedbackMessage.tlc_id
                         }
                     };
-                    locationHistory = [...locationHistory, historyPoint];
+                    locationHistory.push(historyPoint);
                     locationHistoryGeoJSON = {
                         type: 'FeatureCollection',
                         features: locationHistory
@@ -135,8 +127,8 @@
              
             }
         )
-
     })
+
 
     function resetLocationHistory() {
         feedbackHistory = [];
