@@ -18,10 +18,10 @@
     // Define the columns using the column helper.
     // This is a basic example. Check other examples for more complexity.
     const columnDefs = [
-    colHelp.accessor('name', { header: 'Name' }),
-    colHelp.accessor('age', { header: 'Age' }),
-    colHelp.accessor('email', { header: 'Email' }),
-    colHelp.accessor('phone', { header: 'Phone' })
+        colHelp.accessor('name', { header: 'Name' }),
+        colHelp.accessor('age', { header: 'Age' }),
+        colHelp.accessor('email', { header: 'Email' }),
+        colHelp.accessor('phone', { header: 'Phone' })
     ];
 
     // Create the table.

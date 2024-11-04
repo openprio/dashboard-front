@@ -3,11 +3,12 @@
     import Navigation from "../components/Navigation.svelte";
     import { createColumnHelper, createSvelteTable, FlexRender, getCoreRowModel, renderSnippet } from '../lib/table';
     import { Link } from "svelte-routing";
+    import Intersectionperjourney from "./Intersectionperjourney.svelte";
     
-    type IntersectionLink = {
-        road_regulator_id: number,
-        intersection_id: number,
-        intersection_name: string
+    type intersectionJourneysLink = {
+        data_owner_code: string,
+        line_planning_number: string,
+        direction: string,
     }
 
     type PercentageBar = {
@@ -16,62 +17,63 @@
         bg_color: string;
     }
 
-    type Intersection = {
-        road_regulator_id:     number;
-        intersection_id:       number;
-        intersection_name:     string;
-        tlc_descriptive_name:  string;
-        journey_total:            number;
-        count_srm_new:         number;
-        count_ssm_requested:   number;
-        count_ssm_proccessing: number;
-        count_ssm_granted:     number;
-        count_openprio_received: number;
-        intersection_link:     IntersectionLink;
-        success_ratio:         PercentageBar;
-        openprio_received_ratio: PercentageBar;
+    type IntersectionLineStat = {
+        data_owner_code: string
+        line_planning_number: string
+        direction: string
+        journey_total: number
+        count_srm_new: number
+        count_ssm_requested: number
+        count_ssm_proccessing: number
+        count_ssm_granted: number
+        count_openprio_received: number
+        average_time_at_intersection: number
+        max_time_at_intersection: number
+        min_time_at_intersection: number
+        median_time_at_intersection: number
+        percent85_time_at_intersection: number
+        success_ratio:         PercentageBar
+        openprio_received_ratio: PercentageBar
+        intersectionJourneysLink: intersectionJourneysLink
+
     };
+
+    let { road_regulator_id, intersection_id, operation_day} = $props();
 
 
 
     // 💡 Create a column helper for the user profile data.
     // It's not necessary, but it helps with typescript stuff.
-    const colHelp = createColumnHelper<Intersection>();
+    const colHelp = createColumnHelper<IntersectionLineStat>();
 
     // Define the columns using the column helper.
     // This is a basic example. Check other examples for more complexity.
     const columnDefs = [
-        colHelp.accessor('road_regulator_id', { 
+        colHelp.accessor('data_owner_code', { 
             header: () => (
-                renderSnippet(defaultHeaderTitle, 'road_regulator_id')
+                renderSnippet(defaultHeaderTitle, 'Data owner')
             ),
             cell: ( cell ) => (
                 renderSnippet(defaultCell, cell.getValue())
             ) 
         }),
-        colHelp.accessor('intersection_id', { 
+        colHelp.accessor('intersectionJourneysLink', { 
             header: () => (
-                renderSnippet(defaultHeaderTitle, 'intersection_id')
+                renderSnippet(defaultHeaderTitle, 'Line planning number')
+            ),
+            cell: ( cell ) => (
+                renderSnippet(intersectionJourneysLink, cell.getValue())
+            )
+        }),
+        colHelp.accessor('direction', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'Richting')
             ),
             cell: ( cell ) => (
                 renderSnippet(defaultCell, cell.getValue())
             )
-        }),
-        colHelp.accessor('intersection_link', { 
-            header: () => (
-                renderSnippet(defaultHeaderTitle, 'Kruising')
-            ),
-            cell: ( cell ) => (
-                renderSnippet(intersectionLink, cell.getValue())
-            )
         }
         ),
-        colHelp.accessor('tlc_descriptive_name', { 
-            header: () => (
-                renderSnippet(defaultHeaderTitle, 'VRI locatie')
-            ),
-            cell: ({ cell }) => renderSnippet(defaultCell, cell.getValue())
-        }),
         colHelp.accessor('journey_total', { 
             header: () => (
                 renderSnippet(defaultHeaderTitle, 'Ritten gepasseerd')
@@ -89,7 +91,37 @@
                 renderSnippet(defaultHeaderTitle, 'OpenPrio ontvangen')
             ),
             cell: ({ cell }) => renderSnippet(ratioCell, cell.getValue())
-        })
+        }),
+        colHelp.accessor('average_time_at_intersection', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'Tijd op kruising gemiddeld')
+            ),
+            cell: ({ cell }) => renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`)
+        }),
+        colHelp.accessor('min_time_at_intersection', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'min.')
+            ),
+            cell: ({ cell }) => renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`)
+        }),
+        colHelp.accessor('max_time_at_intersection', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'max.')
+            ),
+            cell: ({ cell }) => renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`)
+        }),
+        colHelp.accessor('median_time_at_intersection', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'mediaan')
+            ),
+            cell: ({ cell }) => renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`)
+        }),
+        colHelp.accessor('percent85_time_at_intersection', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, '85% percentile')
+            ),
+            cell: ({ cell }) => renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`)
+        }),
     ];
 
     let operationDate = $state((new Date()).toJSON().slice(0, 10));
@@ -101,7 +133,7 @@
         console.log(selectedRoadRegulator);
     });
 
-    let rows: Intersection[] = $state([]);
+    let rows: IntersectionLineStat[] = $state([]);
     // Create the table.
     let table = createSvelteTable({
         get data() { 
@@ -135,21 +167,22 @@
         }
     }
 
-    async function loadData(operationDate, selectedRoadRegulator) {
+    async function loadData(operationDate, roadRegulator, intersectionId) {
         try {
-        let response = await fetch(`https://dashboard-api.openprio.nl/intersection_stats?road_regulator=${selectedRoadRegulator}&operation_date=${operationDate}`);
+        let response = await fetch(`https://dashboard-api.openprio.nl/intersection_stats_per_line?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}`);
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
         let data = await response.json();
-        rows = data.map((row: Intersection) => {
-            row.intersection_link = {
-                road_regulator_id: row.road_regulator_id,
-                intersection_id: row.intersection_id,
-                intersection_name: row.intersection_name,
-            };
+        rows = data.map((row: IntersectionLineStat) => {
             row.success_ratio = getPercentageBarData( row.count_ssm_granted / row.journey_total);
             row.openprio_received_ratio = getPercentageBarData( row.count_openprio_received / row.journey_total);
+            row.intersectionJourneysLink = {
+                data_owner_code: row.data_owner_code,
+                line_planning_number: row.line_planning_number,
+                direction: row.direction,  
+            };
+
 
             return row;
         })
@@ -161,26 +194,13 @@
     }
 
     $effect (() => {
-        loadData(operationDate, selectedRoadRegulator);
-    });
-
-    onMount(async () => {
-        try {
-        let response = await fetch('https://dashboard-api.openprio.nl/road_regulators');
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        let data = await response.json();
-        roadRegulators = data;
-        selectedRoadRegulator = 31075;
-
-
-        } catch (error) {
-            console.log("fout");
-            console.error('Failed to fetch data:', error);
-        }
+        loadData(operation_day, road_regulator_id, intersection_id);
     });
 </script>
+
+
+<Navigation></Navigation>
+
 
 {#snippet defaultHeaderTitle(content: any)}
     <th class="py-2 pr-8 border-b border-neutral-200 font-medium text-left">{content}</th>
@@ -204,35 +224,13 @@
 {/snippet}
 
 
-
-{#snippet intersectionLink(intersectionLink: IntersectionLink)}
+{#snippet intersectionJourneysLink(intersectionJourneyLink: intersectionJourneysLink)}
     <td>
-        <Link to={`/intersections/${operationDate}/${intersectionLink.road_regulator_id}/${intersectionLink.intersection_id}`}
-        class="font-medium text-blue-600 dark:text-blue-500 hover:underline">{intersectionLink.intersection_name}</Link>
+        <Link to={`/intersections/${operation_day}/${road_regulator_id}/${intersection_id}/journeys/${intersectionJourneyLink.data_owner_code}/${intersectionJourneyLink.line_planning_number}/${intersectionJourneyLink.direction}`}
+        class="font-medium text-blue-600 dark:text-blue-500 hover:underline">{intersectionJourneyLink.line_planning_number}</Link>
     </td> 
 {/snippet}
 
-<Navigation></Navigation>
-
-<div class="flex flex-row">
-    <div class="flex-col mx-4 my-2">
-        <label for="operation_day" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Operation day</label>
-        <input id="operation_day" type="date" value={operationDate} oninput={e => operationDate = e.target.value|| operationDate} />
-    </div>
-
-    <div class="flex-col mx-4 my-2">
-        <label for="road_regulator" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Wegbeheerder</label>
-        <select id="road_regulator" bind:value={selectedRoadRegulator}
-        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-            {#each roadRegulators as roadRegulator}
-                <option value={roadRegulator.road_regulator_id}>
-                    {roadRegulator.road_regulator_name}
-                </option>
-            {/each}
-        </select>
-    </div>
-
-</div>
 
 <div>
     <table class="table-auto m-4">
