@@ -435,6 +435,10 @@
                             <span>{selectedVehicle.position.hdop.toFixed(2)}</span>
                         </div>
                         <div class="flex gap-2 justify-between">
+                            <h3>Aantal satellieten</h3>
+                            <span>{selectedVehicle.position.numberOfReceivedSatellites}</span>
+                        </div>
+                        <div class="flex gap-2 justify-between">
                             <h3>Nauwkeurigheid</h3>
                             <span>{selectedVehicle.position.accuracy}</span>
                         </div>
