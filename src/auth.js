@@ -17,6 +17,7 @@ onAuthStateChanged(firebaseAuth, (user) => {
 });
 
 export const getIdToken = async () => {
+    await firebaseAuth.authStateReady();
     const user = firebaseAuth.currentUser;
     if (user) {
       return await user.getIdToken();

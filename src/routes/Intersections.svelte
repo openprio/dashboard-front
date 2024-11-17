@@ -1,19 +1,17 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import Navigation from "../components/Navigation.svelte";
-    import { createColumnHelper, createSvelteTable, FlexRender, getCoreRowModel, renderSnippet } from '../lib/table';
+    import { createColumnHelper, createSvelteTable, FlexRender, getCoreRowModel, getSortedRowModel, renderComponent, renderSnippet, type Row, type SortingFn } from '../lib/table';
     import { Link } from "svelte-routing";
+    import { getIdToken } from "../auth";
+    import type { PercentageBarData } from "../components/PercentageBarData";
+    import { getPercentageBarData } from "../components/PercentageBarData";
+    import PercentageBar from "../components/PercentageBar.svelte";
     
     type IntersectionLink = {
         road_regulator_id: number,
         intersection_id: number,
         intersection_name: string
-    }
-
-    type PercentageBar = {
-        percentage: string;
-        color: string;
-        bg_color: string;
     }
 
     type Intersection = {
@@ -28,8 +26,9 @@
         count_ssm_granted:     number;
         count_openprio_received: number;
         intersection_link:     IntersectionLink;
-        success_ratio:         PercentageBar;
-        openprio_received_ratio: PercentageBar;
+        openprio_received_ratio: PercentageBarData;
+        processing_ratio:      PercentageBarData,
+        success_ratio:         PercentageBarData;
     };
 
 
@@ -78,18 +77,28 @@
             ),
             cell: ({ cell }) => renderSnippet(defaultCell, cell.getValue())
         }),
-        colHelp.accessor('success_ratio', { 
-            header: () => (
-                renderSnippet(defaultHeaderTitle, 'Succesvolle aanvragen')
-            ),
-            cell: ({ cell }) => renderSnippet(ratioCell, cell.getValue())
-        }),
         colHelp.accessor('openprio_received_ratio', { 
             header: () => (
                 renderSnippet(defaultHeaderTitle, 'OpenPrio ontvangen')
             ),
-            cell: ({ cell }) => renderSnippet(ratioCell, cell.getValue())
+            cell: ({ cell }) => renderComponent(PercentageBar, {content: cell.getValue()}),
+        }),
+        colHelp.accessor('processing_ratio', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'PROCESSING ontvangen')
+            ),
+            cell: ({ cell }) => renderComponent(PercentageBar, {content: cell.getValue()}),
+        }),
+        colHelp.accessor('success_ratio', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'Aanvraag succesvol')
+            ),
+            cell: ({ cell }) => renderComponent(PercentageBar, {content: cell.getValue()}),
+            sortingFn: (rowA, rowB, columnId) => {
+                return rowA.original.success_ratio.ratio - rowB.original.success_ratio.ratio
+            },
         })
+       
     ];
 
     let operationDate = $state((new Date()).toJSON().slice(0, 10));
@@ -108,51 +117,47 @@
             return rows; 
         },
         columns: columnDefs,
-        getCoreRowModel: getCoreRowModel()
+        initialState: {
+            sorting: [
+                {
+                    id: 'success_ratio',
+                    desc: true, // sort by name in descending order by default
+                },
+            ],
+        },
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
     });
 
-    function getPercentageBarData(ratio: number){
-        let color = 'bg-red-600';
-        let bg_color = 'bg-red-200';
-        if (ratio >= 0.98) {
-            color = 'bg-green-800';
-            bg_color = 'bg-green-200';
-        } else if(ratio >= 0.95) {
-            color = 'bg-green-600';
-            bg_color = 'bg-green-200';
-        } else if (ratio >= 0.90) {
-            color = 'bg-yellow-300';
-            bg_color = 'bg-yellow-200';
-        } else if (ratio >= 0.8) {
-            color = 'bg-yellow-400';
-            bg_color = 'bg-yellow-200';
-        }
-
-        return {
-            percentage: `${(ratio * 100.0).toFixed(1)}%`,
-            color: color,
-            bg_color: bg_color,
-        }
-    }
+ 
 
     async function loadData(operationDate, selectedRoadRegulator) {
+        let token = await getIdToken();
         try {
-        let response = await fetch(`https://dashboard-api.openprio.nl/intersection_stats?road_regulator=${selectedRoadRegulator}&operation_date=${operationDate}`);
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        let data = await response.json();
-        rows = data.map((row: Intersection) => {
-            row.intersection_link = {
-                road_regulator_id: row.road_regulator_id,
-                intersection_id: row.intersection_id,
-                intersection_name: row.intersection_name,
-            };
-            row.success_ratio = getPercentageBarData( row.count_ssm_granted / row.journey_total);
-            row.openprio_received_ratio = getPercentageBarData( row.count_openprio_received / row.journey_total);
+            let response = await fetch(
+                `https://dashboard-api.openprio.nl/intersection_stats?road_regulator=${selectedRoadRegulator}&operation_date=${operationDate}`,
+                {
+                    headers: {
+                        "Authorization": "Bearer " + token,
+                    }
+                }
+            );
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            let data = await response.json();
+            rows = data.map((row: Intersection) => {
+                row.intersection_link = {
+                    road_regulator_id: row.road_regulator_id,
+                    intersection_id: row.intersection_id,
+                    intersection_name: row.intersection_name,
+                };
+                row.openprio_received_ratio = getPercentageBarData( row.count_openprio_received / row.journey_total);
+                row.processing_ratio = getPercentageBarData( row.count_ssm_proccessing/ row.journey_total);
+                row.success_ratio = getPercentageBarData( row.count_ssm_granted / row.journey_total);
 
-            return row;
-        })
+                return row;
+            })
 
         } catch (error) {
             console.log("fout");
@@ -165,14 +170,21 @@
     });
 
     onMount(async () => {
+        let token = await getIdToken();
         try {
-        let response = await fetch('https://dashboard-api.openprio.nl/road_regulators');
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        let data = await response.json();
-        roadRegulators = data;
-        selectedRoadRegulator = 31075;
+            let response = await fetch('https://dashboard-api.openprio.nl/road_regulators',
+                {  
+                    headers: {
+                        "Authorization": "Bearer "  + token,
+                    }
+                }
+            );
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            let data = await response.json();
+            roadRegulators = data;
+            selectedRoadRegulator = 31075;
 
 
         } catch (error) {
@@ -188,19 +200,6 @@
 
 {#snippet defaultCell(content: any)}
     <td class="text-sm pr-8">{content}</td>
-{/snippet}
-
-{#snippet ratioCell(percentage: PercentageBar)}
-    <td class="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-        <div class="flex items-center">
-        <span class="mr-2">{percentage.percentage}</span>
-        <div class="relative w-full">
-            <div class="overflow-hidden h-2 text-xs flex rounded {percentage.bg_color}">
-            <div style="width: {percentage.percentage}" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center {percentage.color}"></div>
-            </div>
-        </div>
-    </div>
-  </td>
 {/snippet}
 
 

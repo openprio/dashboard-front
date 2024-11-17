@@ -1,20 +1,17 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import Navigation from "../components/Navigation.svelte";
-    import { createColumnHelper, createSvelteTable, FlexRender, getCoreRowModel, renderSnippet } from '../lib/table';
+    import { createColumnHelper, createSvelteTable, FlexRender, getCoreRowModel, renderComponent, renderSnippet } from '../lib/table';
     import { Link } from "svelte-routing";
     import Intersectionperjourney from "./Intersectionperjourney.svelte";
+    import { getIdToken } from "../auth";
+    import { getPercentageBarData, type PercentageBarData } from "../components/PercentageBarData";
+    import PercentageBar from "../components/PercentageBar.svelte";
     
     type intersectionJourneysLink = {
         data_owner_code: string,
         line_planning_number: string,
         direction: string,
-    }
-
-    type PercentageBar = {
-        percentage: string;
-        color: string;
-        bg_color: string;
     }
 
     type IntersectionLineStat = {
@@ -32,8 +29,10 @@
         min_time_at_intersection: number
         median_time_at_intersection: number
         percent85_time_at_intersection: number
-        success_ratio:         PercentageBar
-        openprio_received_ratio: PercentageBar
+        openprio_received_ratio: PercentageBarData
+        requested_ratio: PercentageBarData
+        processing_ratio: PercentageBarData
+        success_ratio:         PercentageBarData
         intersectionJourneysLink: intersectionJourneysLink
 
     };
@@ -80,17 +79,29 @@
             ),
             cell: ({ cell }) => renderSnippet(defaultCell, cell.getValue())
         }),
-        colHelp.accessor('success_ratio', { 
-            header: () => (
-                renderSnippet(defaultHeaderTitle, 'Succesvolle aanvragen')
-            ),
-            cell: ({ cell }) => renderSnippet(ratioCell, cell.getValue())
-        }),
         colHelp.accessor('openprio_received_ratio', { 
             header: () => (
                 renderSnippet(defaultHeaderTitle, 'OpenPrio ontvangen')
             ),
-            cell: ({ cell }) => renderSnippet(ratioCell, cell.getValue())
+            cell: ({ cell }) => renderComponent(PercentageBar, {content: cell.getValue()})
+        }),
+        colHelp.accessor('requested_ratio', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'REQUESTED ontvangen')
+            ),
+            cell: ({ cell }) => renderComponent(PercentageBar, {content: cell.getValue()})
+        }),
+        colHelp.accessor('processing_ratio', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'PROCESSING ontvangen')
+            ),
+            cell: ({ cell }) => renderComponent(PercentageBar, {content: cell.getValue()})
+        }),
+        colHelp.accessor('success_ratio', { 
+            header: () => (
+                renderSnippet(defaultHeaderTitle, 'Succesvolle aanvragen')
+            ),
+            cell: ({ cell }) => renderComponent(PercentageBar, {content: cell.getValue()})
         }),
         colHelp.accessor('average_time_at_intersection', { 
             header: () => (
@@ -143,40 +154,27 @@
         getCoreRowModel: getCoreRowModel()
     });
 
-    function getPercentageBarData(ratio: number){
-        let color = 'bg-red-600';
-        let bg_color = 'bg-red-200';
-        if (ratio >= 0.98) {
-            color = 'bg-green-800';
-            bg_color = 'bg-green-200';
-        } else if(ratio >= 0.95) {
-            color = 'bg-green-600';
-            bg_color = 'bg-green-200';
-        } else if (ratio >= 0.90) {
-            color = 'bg-yellow-300';
-            bg_color = 'bg-yellow-200';
-        } else if (ratio >= 0.8) {
-            color = 'bg-yellow-400';
-            bg_color = 'bg-yellow-200';
-        }
-
-        return {
-            percentage: `${(ratio * 100.0).toFixed(1)}%`,
-            color: color,
-            bg_color: bg_color,
-        }
-    }
-
     async function loadData(operationDate, roadRegulator, intersectionId) {
         try {
-        let response = await fetch(`https://dashboard-api.openprio.nl/intersection_stats_per_line?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}`);
+            let token = await getIdToken();
+            let response = await fetch(
+                `https://dashboard-api.openprio.nl/intersection_stats_per_line?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}`,
+                {
+                    headers: {
+                        "Authorization": "Bearer " + token,
+                    }
+                }
+            );
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
         let data = await response.json();
         rows = data.map((row: IntersectionLineStat) => {
-            row.success_ratio = getPercentageBarData( row.count_ssm_granted / row.journey_total);
             row.openprio_received_ratio = getPercentageBarData( row.count_openprio_received / row.journey_total);
+            row.requested_ratio = getPercentageBarData( row.count_ssm_proccessing / row.journey_total );
+            row.processing_ratio = getPercentageBarData( row.count_ssm_proccessing / row.journey_total);
+            
+            row.success_ratio = getPercentageBarData( row.count_ssm_granted / row.journey_total);
             row.intersectionJourneysLink = {
                 data_owner_code: row.data_owner_code,
                 line_planning_number: row.line_planning_number,
@@ -208,19 +206,6 @@
 
 {#snippet defaultCell(content: any)}
     <td class="text-sm pr-8">{content}</td>
-{/snippet}
-
-{#snippet ratioCell(percentage: PercentageBar)}
-    <td class="border-t-0 px-6 align-middle border-l-0 border-r-0 text-xs whitespace-nowrap p-4">
-        <div class="flex items-center">
-        <span class="mr-2">{percentage.percentage}</span>
-        <div class="relative w-full">
-            <div class="overflow-hidden h-2 text-xs flex rounded {percentage.bg_color}">
-            <div style="width: {percentage.percentage}" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center {percentage.color}"></div>
-            </div>
-        </div>
-    </div>
-  </td>
 {/snippet}
 
 

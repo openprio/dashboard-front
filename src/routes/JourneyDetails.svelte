@@ -1,53 +1,66 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import Navigation from "../components/Navigation.svelte";
-    import { createColumnHelper, createSvelteTable, FlexRender, getCoreRowModel, renderSnippet } from '../lib/table';
-    import { getIdToken } from "../auth";
-    import {extract_timestamp} from "../util/time_util";
+    import { createColumnHelper, createSvelteTable, FlexRender, getCoreRowModel, getSortedRowModel, renderComponent, renderSnippet, type Row, type SortingFn } from '../lib/table';
     import { Link } from "svelte-routing";
+    import { getIdToken } from "../auth";
+    import type { PercentageBarData } from "../components/PercentageBarData";
+    import { getPercentageBarData } from "../components/PercentageBarData";
+    import PercentageBar from "../components/PercentageBar.svelte";
+    import {extract_timestamp} from "../util/time_util";
     
-    type DatedJourneyLink = {
-        dated_journey_id: number;
-        journey_number: string;
-    }
+ 
+    let { dated_journey_id } = $props();
 
     type IntersectionPass = {
-        journey: DatedJourneyLink
-        dated_journey_id: number
-        data_owner_code: string
-        journey_number: string
-        line_planning_number: string
-        line_public_code: string
-        operation_date: string
-        journey_id: string
-        route_id: string
-        line_id: string
-        direction: string
-        vehicle_number: number
-        block_code: number
-        init_time: string
-        target_departure_time_first_stop: string
-        target_arrival_final_stop: string
+        tlc_id: string
         road_regulator_id: number
         intersection_id: number
+        dated_journey_id: number
+        point_on_route: PointOnRoute
         route_distance_traveled: number
         closest_distance_to_intersection: number
         first_openprio_message: string
         last_openprio_message: string
-        first_srm_new: string
-        first_srm_updated: string
-        first_srm_cancellation: string
-        first_ssm_requested: string
-        first_ssm_processing: string
-        first_ssm_granted: string
-        first_ssm_rejected: string
+        first_srm_new: any
+        first_srm_updated: any
+        first_srm_cancellation: any
+        first_ssm_requested: any
+        first_ssm_processing: any
+        first_ssm_granted: any
+        first_ssm_rejected: any
         other_ssm_events_sent: boolean
         first_door_open: string
         last_door_open: string
+        intersection_name: string
+        intersection_descriptive_name: string
+        location: Location
+        use_cases: string[]
+        tlc_name: string
+        tlc_descriptive_name: string
+        alias: string
     };
 
-    let { road_regulator_id, intersection_id, operation_day, 
-        data_owner_code, line_planning_number, direction} = $props();
+
+    type PointOnRoute = {
+        type: string
+        coordinates: number[]
+    }
+
+    type Location = {
+        type: string
+        crs: Crs
+        coordinates: number[]
+    }
+
+    type Crs =  {
+    type: string
+    properties: Properties
+    }
+
+    type Properties = {
+    name: string
+    }
 
 
 
@@ -58,53 +71,45 @@
     // Define the columns using the column helper.
     // This is a basic example. Check other examples for more complexity.
     const columnDefs = [
-        colHelp.accessor('journey', { 
+        colHelp.accessor('road_regulator_id', { 
             header: () => (
-                renderSnippet(defaultHeaderTitle, 'JourneyNumber')
+                renderSnippet(defaultHeaderTitle, 'road_regulator_id')
             ),
             cell: ( cell ) => (
-                renderSnippet(journeyLink, cell.getValue())
+                renderSnippet(defaultCell, cell.getValue())
             ) 
         }),
-        colHelp.accessor('route_id', { 
+        colHelp.accessor('intersection_id', { 
             header: () => (
-                renderSnippet(defaultHeaderTitle, 'RouteID')
+                renderSnippet(defaultHeaderTitle, 'intersection_id')
             ),
             cell: ( cell ) => (
                 renderSnippet(defaultCell, cell.getValue())
-            )
+            ) 
         }),
-        colHelp.accessor('vehicle_number', { 
+        colHelp.accessor('intersection_name', { 
             header: () => (
-                renderSnippet(defaultHeaderTitle, 'Grootwagennummer')
+                renderSnippet(defaultHeaderTitle, 'Kruising')
             ),
             cell: ( cell ) => (
-                renderSnippet(defaultCell, cell.getValue())
-            )
+                renderSnippet(defaultCell, `${cell.getValue()}`)
+            ) 
         }),
-        colHelp.accessor('block_code', { 
+        colHelp.accessor('tlc_descriptive_name', { 
             header: () => (
-                renderSnippet(defaultHeaderTitle, 'Omloop')
+                renderSnippet(defaultHeaderTitle, 'VRI locatie')
             ),
             cell: ( cell ) => (
-                renderSnippet(defaultCell, cell.getValue())
-            )
+                renderSnippet(defaultCell, `${cell.getValue()}`)
+            ) 
         }),
-        colHelp.accessor('init_time', { 
+        colHelp.accessor('route_distance_traveled', { 
             header: () => (
-                renderSnippet(defaultHeaderTitle, 'Initialisatie')
+                renderSnippet(defaultHeaderTitle, 'Afstand vanaf begin')
             ),
             cell: ( cell ) => (
-                renderSnippet(errorIfEmptyCell, extract_timestamp(cell.getValue()))
-            )
-        }),
-        colHelp.accessor('target_departure_time_first_stop', { 
-            header: () => (
-                renderSnippet(defaultHeaderTitle, 'Geplande start')
-            ),
-            cell: ( cell ) => (
-                renderSnippet(defaultCell, extract_timestamp(cell.getValue()))
-            )
+                renderSnippet(defaultCell, `${cell.getValue()}m`)
+            ) 
         }),
         colHelp.accessor('first_openprio_message', { 
             header: () => (
@@ -164,17 +169,7 @@
         }),
     ];
 
-    let operationDate = $state((new Date()).toJSON().slice(0, 10));
-    let roadRegulators = $state([]);
-    let selectedRoadRegulator = $state();
-
-    $effect (()=> {
-        console.log(operationDate);
-        console.log(selectedRoadRegulator);
-    });
-
     let rows: IntersectionPass[] = $state([]);
-    // Create the table.
     let table = createSvelteTable({
         get data() { 
             return rows; 
@@ -183,69 +178,58 @@
         getCoreRowModel: getCoreRowModel()
     });
 
-  
-    async function loadData(operationDate, roadRegulator, intersectionId) {
+ 
+
+    async function loadData(datedJourneyID ) {
         let token = await getIdToken();
         try {
             let response = await fetch(
-                `https://dashboard-api.openprio.nl/intersection_stats_per_journey?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}&line_planning_number=${line_planning_number}&direction=${direction}`,
-                    {
-                        headers: {
-                            "Authorization": "Bearer " + token,
-                        }
+                `https://dashboard-api.openprio.nl/journey?dated_journey_id=${datedJourneyID}`,
+                {
+                    headers: {
+                        "Authorization": "Bearer " + token,
                     }
+                }
             );
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             let data = await response.json();
+            console.log(data);
             rows = data.map((row: IntersectionPass) => {
-                // row.success_ratio = getPercentageBarData( row.count_ssm_granted / row.journey_total);
-                // row.openprio_received_ratio = getPercentageBarData( row.count_openprio_received / row.journey_total);
-                row.journey = {
-                    "dated_journey_id": row.dated_journey_id,
-                    "journey_number": row.journey_number,
-                }
-
+                // row.openprio_received_ratio = getPercentageBarData( row.count_openprio_received / row.count_intersections);
+                // row.processing_ratio = getPercentageBarData( row.count_ssm_proccessing/ row.count_intersections);
+                // row.success_ratio = getPercentageBarData( row.count_ssm_granted / row.count_intersections);
 
                 return row;
             })
 
-            } catch (error) {
-                console.log("fout");
-                console.error('Failed to fetch data:', error);
-            }
+        } catch (error) {
+            console.log("fout");
+            console.error('Failed to fetch data:', error);
+        }
     }
 
     $effect (() => {
-        loadData(operation_day, road_regulator_id, intersection_id);
+        loadData(dated_journey_id);
     });
+
 </script>
-
-
-<Navigation></Navigation>
-
-
-
 
 {#snippet defaultHeaderTitle(content: any)}
     <th class="py-2 pr-8 border-b border-neutral-200 font-medium text-left">{content}</th>
 {/snippet}
 
 {#snippet defaultCell(content: any)}
-    <td class="text-sm pr-8 pt-4 pb-4">{content}</td>
+    <td class="text-sm pr-8">{content}</td>
 {/snippet}
 
 {#snippet errorIfEmptyCell(content: any)}
     <td class="text-sm pr-8 pt-4 pb-4 {(content == "" || content == null) ? 'bg-red-400' : ''} ">{content}</td>
 {/snippet}
 
-{#snippet journeyLink(datedJourneyLink: DatedJourneyLink)}
-    <td>
-        <Link to={`/journeys/${datedJourneyLink.dated_journey_id}`}
-        class="font-medium text-blue-600 dark:text-blue-500 hover:underline">{datedJourneyLink.journey_number}</Link>
-    </td> 
-{/snippet}
+
+<Navigation></Navigation>
 
 <div>
     <table class="table-auto m-4">
@@ -269,4 +253,3 @@
         </tbody>
     </table>
 </div>
-
