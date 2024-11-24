@@ -133,11 +133,6 @@
 
     let linePlanningNumber = $state();
 
-    $effect (()=> {
-        console.log(operationDate);
-        console.log(selectedDataOwner);
-    });
-
     let rows: JourneyOverview[] = $state([]);
     // Create the table.
     let table = createSvelteTable({
@@ -175,7 +170,7 @@
             })
 
         } catch (error) {
-            console.log("fout");
+
             console.error('Failed to fetch data:', error);
         }
     }

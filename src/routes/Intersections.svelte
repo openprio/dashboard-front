@@ -105,10 +105,6 @@
     let roadRegulators = $state([]);
     let selectedRoadRegulator = $state();
 
-    $effect (()=> {
-        console.log(operationDate);
-        console.log(selectedRoadRegulator);
-    });
 
     let rows: Intersection[] = $state([]);
     // Create the table.
@@ -160,7 +156,6 @@
             })
 
         } catch (error) {
-            console.log("fout");
             console.error('Failed to fetch data:', error);
         }
     }
@@ -188,7 +183,6 @@
 
 
         } catch (error) {
-            console.log("fout");
             console.error('Failed to fetch data:', error);
         }
     });

@@ -6,7 +6,9 @@
   import IntersectionPerLine from "./routes/Intersectionperline.svelte";
   import IntersectionPerJourney from "./routes/Intersectionperjourney.svelte";
   import Journeys from "./routes/Journeys.svelte";
-    import JourneyDetails from "./routes/JourneyDetails.svelte";
+  import JourneyDetails from "./routes/JourneyDetails.svelte";
+  import Stats from "./routes/Stats.svelte";
+    import RawData from "./routes/RawData.svelte";
 
 
 
@@ -31,6 +33,9 @@
       <JourneyDetails dated_journey_id={params.dated_journey_id}></JourneyDetails>  
     </Route>
 
+    <Route path="/journeys" component={Journeys} />
+    <Route path="/stats" component={Stats} />
+    <Route path="/raw_data" component={RawData} />
     <Route path="/journeys" component={Journeys} />
     <Route path="/login" component={Login} />
     <Route path="/"><Dashboard /></Route>

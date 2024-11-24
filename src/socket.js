@@ -71,7 +71,6 @@ proto.load("openprio_pt_position_data.proto", function(err, root) {
 
 function register_callbacks(client) {
     client.on("connect", () => {
-        console.log("HIER");
         client.subscribe("/prod/pt/position/#", (err) => {
         });
     });

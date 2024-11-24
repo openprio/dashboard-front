@@ -97,7 +97,7 @@
     })
 
     onMount(() => {
-        console.log("TRIGGERED feedbackmessage subscription")
+
          subscribe.feedback(
             (feedbackMessage) => {
                 if (feedbackMessage) {

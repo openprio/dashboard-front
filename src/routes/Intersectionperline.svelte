@@ -139,11 +139,6 @@
     let roadRegulators = $state([]);
     let selectedRoadRegulator = $state();
 
-    $effect (()=> {
-        console.log(operationDate);
-        console.log(selectedRoadRegulator);
-    });
-
     let rows: IntersectionLineStat[] = $state([]);
     // Create the table.
     let table = createSvelteTable({
@@ -186,7 +181,7 @@
         })
 
         } catch (error) {
-            console.log("fout");
+
             console.error('Failed to fetch data:', error);
         }
     }

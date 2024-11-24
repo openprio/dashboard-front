@@ -195,7 +195,6 @@
                 throw new Error('Network response was not ok');
             }
             let data = await response.json();
-            console.log(data);
             rows = data.map((row: IntersectionPass) => {
                 // row.openprio_received_ratio = getPercentageBarData( row.count_openprio_received / row.count_intersections);
                 // row.processing_ratio = getPercentageBarData( row.count_ssm_proccessing/ row.count_intersections);
@@ -205,7 +204,6 @@
             })
 
         } catch (error) {
-            console.log("fout");
             console.error('Failed to fetch data:', error);
         }
     }
