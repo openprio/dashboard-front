@@ -196,6 +196,19 @@
 
     </Chart>
     </div>
+    <div class="w-1/4 m-1">
+        <h1 class="text-xl">Uitleg statistiek</h1>
+
+        <p class="leading-relaxed mt-4 mb-8 mr-2">
+        Voor deze statistiek worden alle kruisingen meegenomen waar ten minste een SSM GRANTED voor is ontvangen. De statistiek wordt bepaald door per kruisingpassage te bepalen of er OpenPrio, SRM, SSM PROCESSING en SSM GRANTED berichten verstuurd zijn.
+        </p>
+
+        <h2 class="text-lg">Filter</h2>
+        <p class="leading-relaxed mt-4 mb-8 mr-2">
+        In deze statistiek zijn alleen ritten meegenomen waarvan ritten starten na het moment alle verkeerslichten in Delft operationeel zijn en eindigen voor het moment dat er VRI's worden uitgeschakelt (ma-vr 07-21, za 09-21, zo 10-21). Voor Delft zijn tevens alle passages van tram 19 uit de statistiek gehaald.
+        </p>
+
+    </div>
 
     
 
