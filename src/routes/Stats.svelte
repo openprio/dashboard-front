@@ -313,11 +313,15 @@
     <div class="w-80 m-2">
         <h1 class="text-xl">Uitleg statistiek</h1>
 
-        <p class="leading-relaxed mt-4 mb-8">
+        <p class="leading-relaxed mt-4 mb-4">
             Voor deze statistiek worden alle kruisingen meegenomen waarvoor gedurende een dag ten
             minste 1 SSM GRANTED is ontvangen.
             In de statistiek wordt per kruispuntpassage weergegeven of er OpenPrio, SRM, SSM
             PROCESSING en SSM GRANTED berichten gezien zijn.
+        </p>
+
+        <p class="leading-relaxed mt-4 mb-8">
+            De data in deze statistiek is volledig correct vanaf 18 november 2024, data voor 18 november kan indicatief worden gebruikt.   
         </p>
 
         <h2 class="text-lg">Filter</h2>
