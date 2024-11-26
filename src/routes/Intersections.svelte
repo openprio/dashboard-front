@@ -153,7 +153,8 @@
                 row.success_ratio = getPercentageBarData( row.count_ssm_granted / row.journey_total);
 
                 return row;
-            })
+            });
+            console.log(rows.snapshot());
 
         } catch (error) {
             console.error('Failed to fetch data:', error);

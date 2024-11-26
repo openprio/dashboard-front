@@ -37,7 +37,7 @@
     let intersectionsGeoJSON: FeatureCollection = $state({
         type: 'FeatureCollection',
         features: []
-    });;
+    });
 
     let filteredFeedbackHistory = $derived(filter_intersection == null ? feedbackHistory : feedbackHistory.filter(feedbackItem => feedbackItem.tlc_id === filter_intersection));
     let filteredLocationHistory = $derived(filter_intersection == null ? locationHistory : locationHistory.filter(locationHistoryItem => locationHistoryItem.properties.tlc_id === filter_intersection));
