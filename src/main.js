@@ -1,5 +1,5 @@
-import './app.css'
-import App from './App.svelte'
+import "./app.css";
+import App from "./App.svelte";
 
 import { mount } from "svelte";
 
@@ -7,8 +7,8 @@ import { mount } from "svelte";
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 const app = mount(App, {
-  target: document.getElementById('app'),
-})
+  target: document.getElementById("app"),
+});
 
 window.component = App;
-export default app
+export default app;

@@ -19,7 +19,11 @@ v8.
 
 ```svelte
 <script lang="ts">
-  import { createColumnHelper, createSvelteTable, getCoreRowModel } from '$lib/table';
+  import {
+    createColumnHelper,
+    createSvelteTable,
+    getCoreRowModel,
+  } from "$lib/table";
 
   type UserProfile = {
     // Shape of the data
@@ -32,10 +36,10 @@ v8.
   // Define the columns using the column helper.
   // This is a basic example. Check other examples for more complexity.
   const columnDefs = [
-    colHelp.accessor('name', { header: 'Name' }),
-    colHelp.accessor('age', { header: 'Age' }),
-    colHelp.accessor('email', { header: 'Email' }),
-    colHelp.accessor('phone', { header: 'Phone' })
+    colHelp.accessor("name", { header: "Name" }),
+    colHelp.accessor("age", { header: "Age" }),
+    colHelp.accessor("email", { header: "Email" }),
+    colHelp.accessor("phone", { header: "Phone" }),
   ];
 
   // Create the table.
@@ -44,7 +48,7 @@ v8.
       /* ... */
     ],
     columns: columnDefs,
-    getCoreRowModel: getCoreRowModel()
+    getCoreRowModel: getCoreRowModel(),
   });
 </script>
 ```
@@ -57,29 +61,29 @@ If you want to render a component in a cell or header, you can use the
 
 ```svelte
 <script lang="ts">
-  import TableCheckbox from './_components/table-checkbox.svelte';
+  import TableCheckbox from "./_components/table-checkbox.svelte";
 
   const columnDefs = [
     // 💡 Rendering a component using renderComponent
     colHelp.display({
-      header: 'Select',
+      header: "Select",
       cell: ({ row }) =>
         renderComponent(TableCheckbox, {
           checked: row.getIsSelected(),
           onchange: () => {
             row.toggleSelected();
-          }
-        })
+          },
+        }),
     }),
 
     // 💡 Rendering a snippet using renderSnippet
-    colHelp.accessor('githubPath', {
-      header: 'GitHub',
+    colHelp.accessor("githubPath", {
+      header: "GitHub",
       cell({ cell }) {
         const href = `${__GITHUB_URL__}/tree/main/${cell.getValue()}`;
-        return renderSnippet(linkCell, { href, text: 'Link to GitHub' });
-      }
-    })
+        return renderSnippet(linkCell, { href, text: "Link to GitHub" });
+      },
+    }),
   ];
 
   // ... define and use table
@@ -99,7 +103,7 @@ you'll use `FlexRender`.
 
 ```svelte
 <script lang="ts">
-  import { FlexRender } from '$lib/flex-render';
+  import { FlexRender } from "$lib/flex-render";
 
   const table = createSvelteTable({
     /* ... */
@@ -112,7 +116,10 @@ you'll use `FlexRender`.
       {#each table.getHeaderGroups() as headerGroup}
         {#each headerGroup.headers as header}
           <th>
-            <FlexRender content={header.column.columnDef.header} context={header.getContext()} />
+            <FlexRender
+              content={header.column.columnDef.header}
+              context={header.getContext()}
+            />
           </th>
         {/each}
       {/each}
@@ -123,7 +130,10 @@ you'll use `FlexRender`.
       <tr>
         {#each row.getVisibleCells() as cell}
           <td>
-            <FlexRender content={cell.column.columnDef.cell} context={cell.getContext()} />
+            <FlexRender
+              content={cell.column.columnDef.cell}
+              context={cell.getContext()}
+            />
           </td>
         {/each}
       </tr>
@@ -184,7 +194,7 @@ an updater function.
   const columnDefs = [
     // Add a column for selection
     colHelp.display({
-      header: 'Select',
+      header: "Select",
       cell: ({ row }) =>
         renderComponent(TableCheckbox, {
           // In this case, `row.getIsSelected()` is only needed if you're starting with an
@@ -192,9 +202,9 @@ an updater function.
           checked: row.getIsSelected(),
           onchange: () => {
             row.toggleSelected();
-          }
-        })
-    })
+          },
+        }),
+    }),
     // ... more columns
   ];
 
@@ -211,7 +221,7 @@ an updater function.
       // This needs to be a getter to keep the state reactive.
       get rowSelection() {
         return rowSelectionState;
-      }
+      },
     },
     onRowSelectionChange: (updater: Updater<RowSelectionState>) => {
       if (updater instanceof Function) {
@@ -220,11 +230,13 @@ an updater function.
         rowSelectionState = updater;
       }
     },
-    getCoreRowModel: getCoreRowModel()
+    getCoreRowModel: getCoreRowModel(),
   });
 </script>
 
-<button onclick={() => table.toggleAllRowsSelected()}> Toggle All Selected </button>
+<button onclick={() => table.toggleAllRowsSelected()}>
+  Toggle All Selected
+</button>
 
 <!-- Table markup -->
 ```

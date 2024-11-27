@@ -1,9 +1,7 @@
-import {firebaseAuth, onAuthStateChanged} from './firebase';
-import { writable } from 'svelte/store';
-
+import { firebaseAuth, onAuthStateChanged } from "./firebase";
+import { writable } from "svelte/store";
 
 export const userCredential = writable(null);
-
 
 onAuthStateChanged(firebaseAuth, (user) => {
   console.log(user);
@@ -17,12 +15,11 @@ onAuthStateChanged(firebaseAuth, (user) => {
 });
 
 export const getIdToken = async () => {
-    await firebaseAuth.authStateReady();
-    const user = firebaseAuth.currentUser;
-    if (user) {
-      return await user.getIdToken();
-    } else {
-      throw new Error("No user is signed in.");
-    }
+  await firebaseAuth.authStateReady();
+  const user = firebaseAuth.currentUser;
+  if (user) {
+    return await user.getIdToken();
+  } else {
+    throw new Error("No user is signed in.");
+  }
 };
-

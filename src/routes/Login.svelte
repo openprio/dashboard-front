@@ -1,64 +1,88 @@
 <script lang="ts">
-    import { preventDefault } from 'svelte/legacy';
+  import { preventDefault } from "svelte/legacy";
 
-    import {firebaseAuth} from '../firebase.js';
-    import { createEventDispatcher } from 'svelte';
-    
-    import {getAuth, signInWithEmailAndPassword} from 'firebase/auth';
-    import Dashboard from "./Dashboard.svelte";
-    import LoadingSpinner from "../components/LoadingSpinner.svelte";
-    import { navigate } from "svelte-routing";
+  import { firebaseAuth } from "../firebase.js";
+  import { createEventDispatcher } from "svelte";
 
-    const dispatch = createEventDispatcher();
+  import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+  import Dashboard from "./Dashboard.svelte";
+  import LoadingSpinner from "../components/LoadingSpinner.svelte";
+  import { navigate } from "svelte-routing";
 
+  const dispatch = createEventDispatcher();
 
-    let username = $state("");
-    let password = $state("");
-    let showErrors = $state(false);
-    let signingIn = $state(false)
+  let username = $state("");
+  let password = $state("");
+  let showErrors = $state(false);
+  let signingIn = $state(false);
 
-    async function login() {
-        signingIn = true;
+  async function login() {
+    signingIn = true;
 
-        try {
-            const userCredentials = await signInWithEmailAndPassword(firebaseAuth, username, password);
+    try {
+      const userCredentials = await signInWithEmailAndPassword(
+        firebaseAuth,
+        username,
+        password,
+      );
 
-            if (userCredentials.user) {
-                // userCredentials.user.getIdToken
-                // access_token.set(userCredentials.user.accessToken);
-                navigate("/", { replace: true });
+      if (userCredentials.user) {
+        // userCredentials.user.getIdToken
+        // access_token.set(userCredentials.user.accessToken);
+        navigate("/", { replace: true });
 
-                signingIn = false;
-                dispatch('authorize');
-            }
-        } catch (e) {
-            signingIn = false;
-            showErrors = true;
-            return;
-        }
+        signingIn = false;
+        dispatch("authorize");
+      }
+    } catch (e) {
+      signingIn = false;
+      showErrors = true;
+      return;
     }
+  }
 </script>
+
 {#if signingIn}
-    <LoadingSpinner/>
+  <LoadingSpinner />
 {:else}
-    <div class="flex flex-col gap-5">
-        <div class="flex flex-col items-center justify-end bg-red-700 border-b border-gray-800 h-40 pb-5 gap-5">
-            <span class="text-8xl text-white">OpenPrio</span>
-            <div class="w-96 h-[5px] bg-blue-500"></div>
-        </div>
-        <form onsubmit={preventDefault(login)} class="flex flex-col gap-5 items-center">
-            <div class="flex flex-col gap-1">
-                <input id="username" placeholder="Username or email.." type="text" bind:value={username} class="bg-white rounded-sm px-2 py-1 border border-gray-500"/>
-            </div>
-            <div class="flex flex-col gap-1">
-                <input id="password" placeholder="Password" type="password" bind:value={password} class="bg-white rounded-sm px-2 py-1 border border-gray-500"/>
-            </div>
-            {#if showErrors}
-                <span class="text-red-500">Failed Login</span>
-            {/if}
-            <button class="bg-blue-700 rounded px-2 py-1 text-white border border-gray-800 w-48 py-1">Login</button>
-        </form>
+  <div class="flex flex-col gap-5">
+    <div
+      class="flex h-40 flex-col items-center justify-end gap-5 border-b border-gray-800 bg-red-700 pb-5"
+    >
+      <span class="text-8xl text-white">OpenPrio</span>
+      <div class="h-[5px] w-96 bg-blue-500"></div>
     </div>
+    <form
+      onsubmit={preventDefault(login)}
+      class="flex flex-col items-center gap-5"
+    >
+      <div class="flex flex-col gap-1">
+        <input
+          id="username"
+          placeholder="Username or email.."
+          type="text"
+          bind:value={username}
+          class="rounded-sm border border-gray-500 bg-white px-2 py-1"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <input
+          id="password"
+          placeholder="Password"
+          type="password"
+          bind:value={password}
+          class="rounded-sm border border-gray-500 bg-white px-2 py-1"
+        />
+      </div>
+      {#if showErrors}
+        <span class="text-red-500">Failed Login</span>
+      {/if}
+      <button
+        class="w-48 rounded border border-gray-800 bg-blue-700 px-2 py-1 py-1 text-white"
+        >Login</button
+      >
+    </form>
+  </div>
 {/if}
 <!--    <svg xmlns="http://www.w3.org/2000/svg" width="400" height="450">-->
 <!--        <g transform="matrix(1.65 0 0 1.977 -1209 -61)">-->

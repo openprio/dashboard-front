@@ -1,4 +1,4 @@
-import type { Component, ComponentProps, Snippet } from 'svelte';
+import type { Component, ComponentProps, Snippet } from "svelte";
 
 /**
  * A helper class to make it easy to identify Svelte components in
@@ -19,7 +19,7 @@ import type { Component, ComponentProps, Snippet } from 'svelte';
 export class RenderComponentConfig<TComponent extends Component> {
   constructor(
     public component: TComponent,
-    public props: ComponentProps<TComponent> | Record<string, never> = {}
+    public props: ComponentProps<TComponent> | Record<string, never> = {},
   ) {}
 }
 
@@ -41,7 +41,7 @@ export class RenderComponentConfig<TComponent extends Component> {
 export class RenderSnippetConfig<TProps> {
   constructor(
     public snippet: Snippet<[TProps]>,
-    public params: TProps
+    public params: TProps,
   ) {}
 }
 
@@ -69,10 +69,10 @@ export class RenderSnippetConfig<TProps> {
  */
 export const renderComponent = <
   TComponent extends Component<any>,
-  TProps extends ComponentProps<TComponent>
+  TProps extends ComponentProps<TComponent>,
 >(
   component: TComponent,
-  props: TProps
+  props: TProps,
 ) => new RenderComponentConfig(component, props);
 
 /**
@@ -99,5 +99,7 @@ export const renderComponent = <
  * ```
  * @see {@link https://tanstack.com/table/latest/docs/guide/column-defs}
  */
-export const renderSnippet = <TProps>(snippet: Snippet<[TProps]>, params: TProps) =>
-  new RenderSnippetConfig(snippet, params);
+export const renderSnippet = <TProps>(
+  snippet: Snippet<[TProps]>,
+  params: TProps,
+) => new RenderSnippetConfig(snippet, params);

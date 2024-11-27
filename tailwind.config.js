@@ -5,22 +5,29 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx,svelte}",
     "./node_modules/flowbite-svelte/**/*.{html,js,svelte,ts}",
   ],
-  darkMode: 'class',
+  darkMode: "class",
 
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Roboto', 'sans-serif'], // Default sans font
+        sans: ["Roboto", "sans-serif"], // Default sans font
       },
       colors: {
         // flowbite-svelte
-        primary: { 50: '#FFF5F2', 100: '#FFF1EE', 200: '#FFE4DE', 300: '#FFD5CC', 400: '#FFBCAD', 500: '#FE795D', 600: '#EF562F', 700: '#EB4F27', 800: '#CC4522', 900: '#A5371B'},
+        primary: {
+          50: "#FFF5F2",
+          100: "#FFF1EE",
+          200: "#FFE4DE",
+          300: "#FFD5CC",
+          400: "#FFBCAD",
+          500: "#FE795D",
+          600: "#EF562F",
+          700: "#EB4F27",
+          800: "#CC4522",
+          900: "#A5371B",
+        },
       },
     },
   },
-  plugins: [
-    require('flowbite/plugin')
-  ],
-
-}
-
+  plugins: [require("flowbite/plugin")],
+};
