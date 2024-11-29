@@ -17,6 +17,14 @@
     type PercentageBarData,
   } from "../components/PercentageBarData";
   import PercentageBar from "../components/PercentageBar.svelte";
+  import filterOperatingSub from "../components/OperatingHoursStore";
+  import OperatingHoursToggle from "../components/OperatingHoursToggle.svelte";
+
+  let filterOperatingHours = $state(false);
+
+  filterOperatingSub.sub((value) => {
+    filterOperatingHours = value.valueOf();
+  });
 
   type intersectionJourneysLink = {
     data_owner_code: string;
@@ -29,7 +37,7 @@
     line_planning_number: string;
     direction: string;
     journey_total: number;
-    count_srm_new: number;
+    count_srm_sent: number;
     count_ssm_requested: number;
     count_ssm_proccessing: number;
     count_ssm_granted: number;
@@ -77,7 +85,7 @@
         renderComponent(PercentageBar, { content: cell.getValue() }),
     }),
     colHelp.accessor("requested_ratio", {
-      header: () => renderSnippet(defaultHeaderTitle, "REQUESTED ontvangen"),
+      header: () => renderSnippet(defaultHeaderTitle, "SRM ontvangen"),
       cell: ({ cell }) =>
         renderComponent(PercentageBar, { content: cell.getValue() }),
     }),
@@ -87,7 +95,7 @@
         renderComponent(PercentageBar, { content: cell.getValue() }),
     }),
     colHelp.accessor("success_ratio", {
-      header: () => renderSnippet(defaultHeaderTitle, "Succesvolle aanvragen"),
+      header: () => renderSnippet(defaultHeaderTitle, "GRANTED ontvangen"),
       cell: ({ cell }) =>
         renderComponent(PercentageBar, { content: cell.getValue() }),
     }),
@@ -133,11 +141,16 @@
     getCoreRowModel: getCoreRowModel(),
   });
 
-  async function loadData(operationDate, roadRegulator, intersectionId) {
+  async function loadData(
+    operationDate,
+    roadRegulator,
+    intersectionId,
+    filterOperatingHours,
+  ) {
     try {
       let token = await getIdToken();
       let response = await fetch(
-        `https://dashboard-api.openprio.nl/intersection_stats_per_line?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}`,
+        `https://dashboard-api.openprio.nl/intersection_stats_per_line?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}&&filter_operating_hours=${filterOperatingHours}`,
         {
           headers: {
             Authorization: "Bearer " + token,
@@ -153,7 +166,7 @@
           row.count_openprio_received / row.journey_total,
         );
         row.requested_ratio = getPercentageBarData(
-          row.count_ssm_proccessing / row.journey_total,
+          row.count_srm_sent / row.journey_total,
         );
         row.processing_ratio = getPercentageBarData(
           row.count_ssm_proccessing / row.journey_total,
@@ -176,11 +189,14 @@
   }
 
   $effect(() => {
-    loadData(operation_day, road_regulator_id, intersection_id);
+    loadData(
+      operation_day,
+      road_regulator_id,
+      intersection_id,
+      filterOperatingHours,
+    );
   });
 </script>
-
-<Navigation></Navigation>
 
 {#snippet defaultHeaderTitle(content: any)}
   <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium"
@@ -204,31 +220,43 @@
   </td>
 {/snippet}
 
-<div>
-  <table class="m-4 table-auto">
-    <thead class="thead-light">
-      <tr>
-        {#each table.getHeaderGroups() as headerGroup}
-          {#each headerGroup.headers as header}
-            <FlexRender
-              content={header.column.columnDef.header}
-              context={header.getContext()}
-            />
+<div class="flex h-screen flex-col">
+  <header class="pb-8">
+    <Navigation></Navigation>
+  </header>
+  <main class="flex-1 overflow-y-auto pt-4">
+    <div class="flex flex-row">
+      <div class="mx-4 my-2 flex-col">
+        <OperatingHoursToggle></OperatingHoursToggle>
+      </div>
+    </div>
+    <div>
+      <table class="mx-4 table-auto">
+        <thead class="thead-light">
+          <tr>
+            {#each table.getHeaderGroups() as headerGroup}
+              {#each headerGroup.headers as header}
+                <FlexRender
+                  content={header.column.columnDef.header}
+                  context={header.getContext()}
+                />
+              {/each}
+            {/each}
+          </tr>
+        </thead>
+        <tbody>
+          {#each table.getRowModel().rows as row}
+            <tr>
+              {#each row.getVisibleCells() as cell}
+                <FlexRender
+                  content={cell.column.columnDef.cell}
+                  context={cell.getContext()}
+                />
+              {/each}
+            </tr>
           {/each}
-        {/each}
-      </tr>
-    </thead>
-    <tbody>
-      {#each table.getRowModel().rows as row}
-        <tr>
-          {#each row.getVisibleCells() as cell}
-            <FlexRender
-              content={cell.column.columnDef.cell}
-              context={cell.getContext()}
-            />
-          {/each}
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+        </tbody>
+      </table>
+    </div>
+  </main>
 </div>

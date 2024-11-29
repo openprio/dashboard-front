@@ -57,6 +57,13 @@
     door_opening_status: number;
     stop_button_status: null;
     driving_direction: number;
+    road_regulator: number;
+    intersection: number;
+    lane_connection: number;
+    eta_stopline: string;
+    transit_status_at_stopline: boolean;
+    transit_schedule: number;
+    pbc_rejection: string;
   };
 
   const colHelp = createColumnHelper<RawDataRecord>();
@@ -78,6 +85,22 @@
     }),
     colHelp.accessor("msg_type", {
       header: () => renderSnippet(defaultHeaderTitle, "msg_type"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("intersection", {
+      header: () => renderSnippet(defaultHeaderTitle, "Kruising"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("bearing", {
+      header: () => renderSnippet(defaultHeaderTitle, "Richting [deg]"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("speed", {
+      header: () => renderSnippet(defaultHeaderTitle, "Snelheid [m/s]"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("number_of_received_satellites", {
+      header: () => renderSnippet(defaultHeaderTitle, "Aantal satellieten"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
     }),
   ];
@@ -158,6 +181,43 @@
 
   let map: maplibregl.Map = $state(null);
   let bbox: BoundingBox = $state(null);
+  let activeRow: number = $state(-1);
+
+  function getFeedbackColor(msg: RawDataRecord) {
+    if (msg.msg_type == "srm") {
+      return srm_to_color(msg.prioritization_response_status);
+    }
+    if (msg.pbc_rejection != "NO_ERROR") {
+      return "#dc2626";
+    }
+    if (msg.msg_type == "ssm") {
+      return ssm_to_color(msg.prioritization_response_status);
+    }
+    return "#000000";
+  }
+
+  function ssm_to_color(prioritization_response_status) {
+    if (prioritization_response_status == "GRANTED") {
+      return "#16a34a";
+    }
+    if (prioritization_response_status == "REQUESTED") {
+      return "#bbf7d0";
+    }
+    if (prioritization_response_status == "REJECTED") {
+      return "#b91c1c";
+    }
+    return "#dbeafe";
+  }
+
+  function srm_to_color(request_type) {
+    if (request_type == "priorityRequestNew") {
+      return "#4ade80";
+    }
+    if (request_type == "priorityRequestUpdate") {
+      return "#eab308";
+    }
+    return "#ef4444";
+  }
 
   async function loadData(dataownerCode, vehicleNumber, startTime, endTime) {
     let token = await getIdToken();
@@ -188,8 +248,9 @@
           properties: {
             type_of_message: rawDataRecord.msg_type,
             "border-color": "#000000",
-            color: "#000000",
+            color: getFeedbackColor(rawDataRecord),
             tlc_id: 1,
+            is_active: false,
           },
         };
         return historyPoint;
@@ -244,6 +305,24 @@
   function setDataOwner(newDataownerCode) {
     dataownerCode = newDataownerCode;
     console.log(dataownerCode);
+  }
+
+  function setActiveRow(index) {
+    activeRow = index;
+    let features = locationHistoryGeoJSON.features.map(
+      (feature, featureIndex) => {
+        if (featureIndex == index) {
+          feature.properties["is_active"] = true;
+        } else {
+          feature.properties["is_active"] = false;
+        }
+        return feature;
+      },
+    );
+    locationHistoryGeoJSON = {
+      type: "FeatureCollection",
+      features: features,
+    };
   }
 
   $effect(() => {
@@ -527,14 +606,34 @@
         </thead>
         <tbody>
           {#each table.getRowModel().rows as row}
-            <tr>
-              {#each row.getVisibleCells() as cell}
-                <FlexRender
-                  content={cell.column.columnDef.cell}
-                  context={cell.getContext()}
-                />
-              {/each}
-            </tr>
+            {#if activeRow == row.index}
+              <tr
+                onclick={() => {
+                  setActiveRow(row.index);
+                }}
+                class="bg-yellow-300"
+              >
+                {#each row.getVisibleCells() as cell}
+                  <FlexRender
+                    content={cell.column.columnDef.cell}
+                    context={cell.getContext()}
+                  />
+                {/each}
+              </tr>
+            {:else}
+              <tr
+                onclick={() => {
+                  setActiveRow(row.index);
+                }}
+              >
+                {#each row.getVisibleCells() as cell}
+                  <FlexRender
+                    content={cell.column.columnDef.cell}
+                    context={cell.getContext()}
+                  />
+                {/each}
+              </tr>
+            {/if}
           {/each}
         </tbody>
       </table>
@@ -563,15 +662,25 @@
                   //   * Yellow, 30px circles when point count is between 100 and 750
                   //   * Pink, 40px circles when point count is greater than or equal to 750
                   "circle-color": ["get", "color"],
-                  "circle-stroke-color": ["get", "border-color"],
+                  "circle-stroke-color": [
+                    "case",
+                    ["==", ["get", "is_active"], true],
+                    "#FACA15",
+                    ["get", "border-color"],
+                  ],
+
                   "circle-stroke-width": [
                     "case",
+                    ["==", ["get", "is_active"], true],
+                    4,
                     ["has", "type_of_message"],
                     1,
                     0,
                   ],
                   "circle-radius": [
                     "case",
+                    ["==", ["get", "is_active"], true],
+                    10,
                     ["==", ["get", "type_of_message"], "ssm"],
                     8,
                     ["==", ["get", "type_of_message"], "srm"],

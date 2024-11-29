@@ -180,8 +180,6 @@
   });
 </script>
 
-<Navigation></Navigation>
-
 {#snippet defaultHeaderTitle(content: any)}
   <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium"
     >{content}</th
@@ -210,31 +208,38 @@
   </td>
 {/snippet}
 
-<div>
-  <table class="m-4 table-auto">
-    <thead class="thead-light">
-      <tr>
-        {#each table.getHeaderGroups() as headerGroup}
-          {#each headerGroup.headers as header}
-            <FlexRender
-              content={header.column.columnDef.header}
-              context={header.getContext()}
-            />
+<div class="flex h-screen flex-col">
+  <header class="pb-8">
+    <Navigation></Navigation>
+  </header>
+  <main class="flex-1 overflow-y-auto pt-4">
+    <div>
+      <table class="mx-4 table-auto">
+        <thead class="thead-light">
+          <tr>
+            {#each table.getHeaderGroups() as headerGroup}
+              {#each headerGroup.headers as header}
+                <FlexRender
+                  content={header.column.columnDef.header}
+                  context={header.getContext()}
+                />
+              {/each}
+            {/each}
+          </tr>
+        </thead>
+        <tbody>
+          {#each table.getRowModel().rows as row}
+            <tr>
+              {#each row.getVisibleCells() as cell}
+                <FlexRender
+                  content={cell.column.columnDef.cell}
+                  context={cell.getContext()}
+                />
+              {/each}
+            </tr>
           {/each}
-        {/each}
-      </tr>
-    </thead>
-    <tbody>
-      {#each table.getRowModel().rows as row}
-        <tr>
-          {#each row.getVisibleCells() as cell}
-            <FlexRender
-              content={cell.column.columnDef.cell}
-              context={cell.getContext()}
-            />
-          {/each}
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+        </tbody>
+      </table>
+    </div>
+  </main>
 </div>
