@@ -106,8 +106,27 @@
   ];
 
   let operationDate = $state(new Date().toJSON().slice(0, 10));
+
   let roadRegulators = $state([]);
-  let selectedRoadRegulator = $state();
+  // Default on Delft
+  let selectedRoadRegulator = $state(31075);
+
+  function loadQueryParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasRoadRegulator = urlParams.has("road_regulator");
+    const hasOperationDate = urlParams.has("operation_date");
+
+    if (hasOperationDate) {
+      operationDate = new Date(Date.parse(urlParams.get("operation_date")))
+        .toJSON()
+        .slice(0, 10);
+    }
+
+    if (hasRoadRegulator) {
+      selectedRoadRegulator = parseInt(urlParams.get("road_regulator"));
+    }
+  }
+  loadQueryParams();
 
   let rows: Intersection[] = $state([]);
   // Create the table.
@@ -173,8 +192,32 @@
     }
   }
 
+  function updateQueryParams(operationDate, selectedRoadRegulator) {
+    const currentUrl = new URL(window.location.href);
+    const updatedUrl = new URL(currentUrl);
+
+    // Update the query parameters
+    updatedUrl.searchParams.set("road_regulator", selectedRoadRegulator);
+    updatedUrl.searchParams.set("operation_date", operationDate);
+
+    if (currentUrl.href !== updatedUrl.href) {
+      history.pushState(null, "", updatedUrl);
+    }
+  }
+
+  let timeoutId;
   $effect(() => {
     loadData(operationDate, selectedRoadRegulator, filterOperatingHours);
+
+    // delay updating URL with 500ms
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      updateQueryParams(operationDate, selectedRoadRegulator);
+    }, 500);
+  });
+
+  window.addEventListener("popstate", () => {
+    loadQueryParams();
   });
 
   onMount(async () => {
@@ -193,7 +236,6 @@
       }
       let data = await response.json();
       roadRegulators = data;
-      selectedRoadRegulator = 31075;
     } catch (error) {
       console.error("Failed to fetch data:", error);
     }
@@ -201,9 +243,47 @@
 </script>
 
 {#snippet defaultHeaderTitle(content: any)}
-  <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium"
-    >{content}</th
-  >
+  {#if content == "OpenPrio ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-red-800"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-red-800"></div>
+        <div class="h-[2px] flex-1 bg-red-800"></div>
+        {content}
+      </div></th
+    >
+  {:else if content == "SRM ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-yellow-500"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-yellow-500"></div>
+        <div class="h-[2px] flex-1 bg-yellow-500"></div>
+        {content}
+      </div></th
+    >
+  {:else if content == "PROCESSING ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-blue-100"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-blue-100"></div>
+        <div class="h-[2px] flex-1 bg-blue-100"></div>
+        {content}
+      </div></th
+    >
+  {:else if content == "GRANTED ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-green-600"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-green-600"></div>
+        <div class="h-[2px] flex-1 bg-green-600"></div>
+        {content}
+      </div></th
+    >
+  {:else}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium"
+      >{content}</th
+    >
+  {/if}
 {/snippet}
 
 {#snippet defaultCell(content: any)}

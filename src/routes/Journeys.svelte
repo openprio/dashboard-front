@@ -19,6 +19,8 @@
   import PercentageBar from "../components/PercentageBar.svelte";
   import OperatingHoursToggle from "../components/OperatingHoursToggle.svelte";
   import filterOperatingSub from "../components/OperatingHoursStore";
+  import { extract_timestamp } from "../util/time_util";
+  import { getRawDataLink, type RawDataLink } from "../components/RawDataLink";
 
   let filterOperatingHours = $state(false);
 
@@ -38,13 +40,19 @@
     line_planning_number: string;
     direction: string;
     vehicle_number: string;
+    block_code: string;
+    target_departure_time_first_stop: string;
+    target_arrival_final_stop: string;
+    init_time: string;
+    init_time_raw_data_link: RawDataLink;
     count_intersections: number;
-    count_srm_new: number;
+    count_srm_sent: number;
     count_ssm_requested: number;
     count_ssm_proccessing: number;
     count_ssm_granted: number;
     count_openprio_received: number;
     openprio_received_ratio: PercentageBarData;
+    srm_sent_ratio: PercentageBarData;
     processing_ratio: PercentageBarData;
     success_ratio: PercentageBarData;
   };
@@ -60,13 +68,24 @@
       header: () => renderSnippet(defaultHeaderTitle, "dated_journey_id"),
       cell: (cell) => renderSnippet(journeyLink, cell.getValue()),
     }),
-    colHelp.accessor("data_owner_code", {
-      header: () => renderSnippet(defaultHeaderTitle, "DataOwnerCode"),
+    colHelp.accessor("vehicle_number", {
+      header: () => renderSnippet(defaultHeaderTitle, "Grootwagennummer"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
     }),
-    colHelp.accessor("line_planning_number", {
-      header: () => renderSnippet(defaultHeaderTitle, "LinePlanningNumber"),
-      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    colHelp.accessor("target_departure_time_first_stop", {
+      header: () => renderSnippet(defaultHeaderTitle, "Gepland start"),
+      cell: (cell) =>
+        renderSnippet(defaultCell, extract_timestamp(cell.getValue())),
+    }),
+    colHelp.accessor("init_time_raw_data_link", {
+      header: () => renderSnippet(defaultHeaderTitle, "Initialisatie rit"),
+      cell: (cell) => renderSnippet(rawDataLinkCell, cell.getValue()),
+    }),
+
+    colHelp.accessor("target_arrival_final_stop", {
+      header: () => renderSnippet(defaultHeaderTitle, "Gepland einde"),
+      cell: (cell) =>
+        renderSnippet(defaultCell, extract_timestamp(cell.getValue())),
     }),
     colHelp.accessor("direction", {
       header: () => renderSnippet(defaultHeaderTitle, "Richting"),
@@ -74,6 +93,10 @@
     }),
     colHelp.accessor("vehicle_number", {
       header: () => renderSnippet(defaultHeaderTitle, "Grootwagennummer"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("block_code", {
+      header: () => renderSnippet(defaultHeaderTitle, "Omloop"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
     }),
     colHelp.accessor("count_intersections", {
@@ -85,13 +108,18 @@
       cell: ({ cell }) =>
         renderComponent(PercentageBar, { content: cell.getValue() }),
     }),
+    colHelp.accessor("srm_sent_ratio", {
+      header: () => renderSnippet(defaultHeaderTitle, "SRM ontvangen"),
+      cell: ({ cell }) =>
+        renderComponent(PercentageBar, { content: cell.getValue() }),
+    }),
     colHelp.accessor("processing_ratio", {
       header: () => renderSnippet(defaultHeaderTitle, "PROCESSING ontvangen"),
       cell: ({ cell }) =>
         renderComponent(PercentageBar, { content: cell.getValue() }),
     }),
     colHelp.accessor("success_ratio", {
-      header: () => renderSnippet(defaultHeaderTitle, "Aanvraag succesvol"),
+      header: () => renderSnippet(defaultHeaderTitle, "GRANTED ontvangen"),
       cell: ({ cell }) =>
         renderComponent(PercentageBar, { content: cell.getValue() }),
       sortingFn: (rowA, rowB, columnId) => {
@@ -111,7 +139,7 @@
       dataOwnerCode: "EBS",
     },
   ]);
-  let selectedDataOwner = $state();
+  let selectedDataOwner = $state("HTM");
 
   let directionOptions = $state([
     {
@@ -127,9 +155,68 @@
       value: "outbound",
     },
   ]);
-  let selectedDirection = $state();
+  let selectedDirection = $state("");
 
-  let linePlanningNumber = $state();
+  let linePlanningNumber = $state("");
+
+  function loadQueryParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasDataownerCode = urlParams.has("dataowner_code");
+    const hasOperationDate = urlParams.has("operation_date");
+    const hasDirection = urlParams.has("direction");
+    const hasLinePlanningNumber = urlParams.has("line_planning_number");
+
+    if (hasOperationDate) {
+      operationDate = new Date(Date.parse(urlParams.get("operation_date")))
+        .toJSON()
+        .slice(0, 10);
+    }
+
+    if (hasDataownerCode) {
+      selectedDataOwner = urlParams.get("dataowner_code");
+    }
+
+    if (hasDirection) {
+      selectedDirection = urlParams.get("direction");
+    }
+
+    if (hasLinePlanningNumber) {
+      linePlanningNumber = urlParams.get("line_planning_number");
+    }
+    console.log(linePlanningNumber);
+  }
+
+  loadQueryParams();
+  window.addEventListener("popstate", () => {
+    console.log(event.target);
+    console.log("HIER");
+    loadQueryParams();
+    //window.history.back();
+  });
+
+  function updateQueryParams(
+    operationDate,
+    selectedDataOwner,
+    selectedDirection,
+    linePlanningNumber,
+  ) {
+    const currentUrl = new URL(window.location.href);
+    const updatedUrl = new URL(currentUrl);
+
+    // Update the query parameters
+    updatedUrl.searchParams.set("dataowner_code", selectedDataOwner);
+    updatedUrl.searchParams.set("operation_date", operationDate);
+    if (selectedDirection != "") {
+      updatedUrl.searchParams.set("direction", selectedDirection);
+    } else {
+      updatedUrl.searchParams.delete("direction");
+    }
+    updatedUrl.searchParams.set("line_planning_number", linePlanningNumber);
+
+    if (currentUrl.href !== updatedUrl.href) {
+      history.pushState(null, "", updatedUrl);
+    }
+  }
 
   let rows: JourneyOverview[] = $state([]);
   // Create the table.
@@ -173,6 +260,14 @@
         row.success_ratio = getPercentageBarData(
           row.count_ssm_granted / row.count_intersections,
         );
+        row.srm_sent_ratio = getPercentageBarData(
+          row.count_srm_sent / row.count_intersections,
+        );
+        row.init_time_raw_data_link = getRawDataLink(
+          row.data_owner_code,
+          row.vehicle_number,
+          row.init_time,
+        );
 
         return row;
       });
@@ -181,6 +276,7 @@
     }
   }
 
+  let timeoutId;
   $effect(() => {
     if (!linePlanningNumber || linePlanningNumber == "") {
       return;
@@ -193,17 +289,78 @@
       selectedDirection,
       filterOperatingHours,
     );
+
+    // delay updating URL with 500ms
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      updateQueryParams(
+        operationDate,
+        selectedDataOwner,
+        selectedDirection,
+        linePlanningNumber,
+      );
+    }, 500);
   });
 </script>
 
 {#snippet defaultHeaderTitle(content: any)}
-  <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium"
-    >{content}</th
-  >
+  {#if content == "OpenPrio ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-red-800"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-red-800"></div>
+        <div class="h-[2px] flex-1 bg-red-800"></div>
+        {content}
+      </div></th
+    >
+  {:else if content == "SRM ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-yellow-500"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-yellow-500"></div>
+        <div class="h-[2px] flex-1 bg-yellow-500"></div>
+        {content}
+      </div></th
+    >
+  {:else if content == "PROCESSING ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-blue-100"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-blue-100"></div>
+        <div class="h-[2px] flex-1 bg-blue-100"></div>
+        {content}
+      </div></th
+    >
+  {:else if content == "GRANTED ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-green-600"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-green-600"></div>
+        <div class="h-[2px] flex-1 bg-green-600"></div>
+        {content}
+      </div></th
+    >
+  {:else}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium"
+      >{content}</th
+    >
+  {/if}
 {/snippet}
 
 {#snippet defaultCell(content: any)}
   <td class="pr-8 text-sm">{content}</td>
+{/snippet}
+
+{#snippet rawDataLinkCell(content: RawDataLink)}
+  <td class="pr-8 text-sm">
+    {#if content}
+      <Link
+        to={content.content}
+        class="font-medium text-blue-600 hover:underline dark:text-blue-500"
+        >{content.linkText}
+      </Link>
+    {/if}
+  </td>
 {/snippet}
 
 {#snippet journeyLink(journeyID: number)}

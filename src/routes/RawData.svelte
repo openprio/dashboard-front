@@ -30,11 +30,6 @@
   import { CircleLayer, MapLibre, GeoJSON } from "svelte-maplibre";
   import type { Feature, FeatureCollection, Point } from "geojson";
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const hasVehicleNumber = urlParams.has("vehicle_number");
-  const hasDataownerCode = urlParams.has("dataowner_code");
-  const hasTimestamp = urlParams.has("timestamp");
-
   onMount(async () => {
     initFlowbite();
   });
@@ -271,13 +266,8 @@
 
   let selectedDate = $state(new Date());
   let dataownerCode = $state("HTM");
-  if (hasDataownerCode) {
-    dataownerCode = urlParams.get("dataowner_code");
-  }
+
   let vehicleNumber = $state("");
-  if (hasVehicleNumber) {
-    vehicleNumber = urlParams.get("vehicle_number");
-  }
 
   let showMap = $state(true);
   let selectedTime = $state(
@@ -290,16 +280,52 @@
   );
 
   let highlightTimestamp = $state(null);
-  if (hasTimestamp) {
-    highlightTimestamp = parseInt(urlParams.get("timestamp"));
-    let newTime = new Date(highlightTimestamp);
-    selectedDate = newTime;
-    selectedTime = newTime.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
+
+  function loadQueryParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasVehicleNumber = urlParams.has("vehicle_number");
+    const hasDataownerCode = urlParams.has("dataowner_code");
+    const hasTimestamp = urlParams.has("timestamp");
+
+    if (hasTimestamp) {
+      highlightTimestamp = parseInt(urlParams.get("timestamp"));
+      let newTime = new Date(highlightTimestamp);
+      selectedDate = newTime;
+      selectedTime = newTime.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
+    }
+
+    if (hasVehicleNumber) {
+      vehicleNumber = urlParams.get("vehicle_number");
+    }
+
+    if (hasDataownerCode) {
+      dataownerCode = urlParams.get("dataowner_code");
+    }
+  }
+
+  loadQueryParams();
+  // window.addEventListener("popstate", () => {
+  //   loadQueryParams();
+  // });
+
+  function updateQueryParams(dataOwnerCode, vehicleNumber, timestamp: Date) {
+    const currentUrl = new URL(window.location.href);
+    const updatedUrl = new URL(currentUrl);
+
+    // Update the query parameters
+    updatedUrl.searchParams.set("dataowner_code", dataOwnerCode);
+    updatedUrl.searchParams.set("vehicle_number", vehicleNumber);
+    updatedUrl.searchParams.set("timestamp", timestamp.valueOf().toString());
+
+    // temporary disable
+    // if (currentUrl.href !== updatedUrl.href) {
+    //   history.pushState(null, "", updatedUrl);
+    // }
   }
 
   function setDataOwner(newDataownerCode) {
@@ -326,7 +352,9 @@
   }
 
   $effect(() => {
-    let test = dataownerCode + selectedDate + vehicleNumber;
+    if (dataownerCode == "" || vehicleNumber == "") {
+      return;
+    }
 
     let splittedTime = selectedTime.split(":");
     let hours = parseInt(splittedTime[0]);
@@ -340,12 +368,12 @@
       minutes,
       seconds,
     );
-    console.log(combinedDate);
 
-    let startDate = new Date(combinedDate.getTime() - 30 * 1000).toISOString();
-    let endDate = new Date(combinedDate.getTime() + 30 * 1000).toISOString();
+    let startDate = new Date(combinedDate.getTime() - 60 * 1000).toISOString();
+    let endDate = new Date(combinedDate.getTime() + 60 * 1000).toISOString();
 
     loadData(dataownerCode, vehicleNumber, startDate, endDate);
+    updateQueryParams(dataownerCode, vehicleNumber, combinedDate);
   });
 </script>
 
@@ -390,8 +418,10 @@
             data-dropdown-toggle="dropdown-time-before"
             class="z-10 inline-flex flex-shrink-0 items-center rounded-s-lg border border-s-0 border-gray-300 bg-gray-100 px-4 py-2.5 text-center text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-700"
             type="button"
+            disabled
           >
-            -30s <svg
+            -1 min
+            <!-- <svg
               class="ms-2.5 h-2.5 w-2.5"
               aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
@@ -404,7 +434,7 @@
                 stroke-width="2"
                 d="m1 1 4 4 4-4"
               /></svg
-            >
+            > -->
           </button>
           <div
             id="dropdown-time-before"
@@ -474,8 +504,10 @@
             data-dropdown-toggle="dropdown-time-after"
             class="z-10 inline-flex flex-shrink-0 items-center rounded-e-lg border border-s-0 border-gray-300 bg-gray-100 px-4 py-2.5 text-center text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-700"
             type="button"
+            disabled
           >
-            +30s <svg
+            +1 min
+            <!-- <svg
               class="ms-2.5 h-2.5 w-2.5"
               aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
@@ -487,8 +519,8 @@
                 stroke-linejoin="round"
                 stroke-width="2"
                 d="m1 1 4 4 4-4"
-              /></svg
-            >
+              /></svg 
+            >-->
           </button>
           <div
             id="dropdown-time-after"

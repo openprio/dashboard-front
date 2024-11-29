@@ -199,9 +199,47 @@
 </script>
 
 {#snippet defaultHeaderTitle(content: any)}
-  <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium"
-    >{content}</th
-  >
+  {#if content == "OpenPrio ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-red-800"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-red-800"></div>
+        <div class="h-[2px] flex-1 bg-red-800"></div>
+        {content}
+      </div></th
+    >
+  {:else if content == "SRM ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-yellow-500"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-yellow-500"></div>
+        <div class="h-[2px] flex-1 bg-yellow-500"></div>
+        {content}
+      </div></th
+    >
+  {:else if content == "PROCESSING ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-blue-100"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-blue-100"></div>
+        <div class="h-[2px] flex-1 bg-blue-100"></div>
+        {content}
+      </div></th
+    >
+  {:else if content == "GRANTED ontvangen"}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium">
+      <div class="flex items-center justify-center space-x-2">
+        <div class="h-[2px] flex-1 bg-green-600"></div>
+        <div class="h-4 w-4 shrink-0 rounded-full bg-green-600"></div>
+        <div class="h-[2px] flex-1 bg-green-600"></div>
+        {content}
+      </div></th
+    >
+  {:else}
+    <th class="border-b border-neutral-200 py-2 pr-8 text-left font-medium"
+      >{content}</th
+    >
+  {/if}
 {/snippet}
 
 {#snippet defaultCell(content: any)}

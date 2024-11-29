@@ -11,6 +11,7 @@
   import { getIdToken } from "../auth";
   import { extract_timestamp } from "../util/time_util";
   import { Link } from "svelte-routing";
+  import { getRawDataLink, type RawDataLink } from "../components/RawDataLink";
 
   type DatedJourneyLink = {
     dated_journey_id: number;
@@ -32,13 +33,16 @@
     vehicle_number: number;
     block_code: number;
     init_time: string;
+    init_time_raw_data_link: RawDataLink;
     target_departure_time_first_stop: string;
+    target_departure_time_raw_data_link: RawDataLink;
     target_arrival_final_stop: string;
     road_regulator_id: number;
     intersection_id: number;
     route_distance_traveled: number;
     closest_distance_to_intersection: number;
     first_openprio_message: string;
+    first_openprio_message_raw_data_link: RawDataLink;
     last_openprio_message: string;
     first_srm_new: string;
     first_srm_updated: string;
@@ -84,20 +88,17 @@
       header: () => renderSnippet(defaultHeaderTitle, "Omloop"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
     }),
-    colHelp.accessor("init_time", {
+    colHelp.accessor("init_time_raw_data_link", {
       header: () => renderSnippet(defaultHeaderTitle, "Initialisatie"),
-      cell: (cell) =>
-        renderSnippet(errorIfEmptyCell, extract_timestamp(cell.getValue())),
+      cell: (cell) => renderSnippet(rawDataLinkCell, cell.getValue()),
     }),
-    colHelp.accessor("target_departure_time_first_stop", {
+    colHelp.accessor("target_departure_time_raw_data_link", {
       header: () => renderSnippet(defaultHeaderTitle, "Geplande start"),
-      cell: (cell) =>
-        renderSnippet(defaultCell, extract_timestamp(cell.getValue())),
+      cell: (cell) => renderSnippet(rawDataLinkCell, cell.getValue()),
     }),
-    colHelp.accessor("first_openprio_message", {
+    colHelp.accessor("first_openprio_message_raw_data_link", {
       header: () => renderSnippet(defaultHeaderTitle, "Eerste OpenPrio <150m"),
-      cell: (cell) =>
-        renderSnippet(errorIfEmptyCell, extract_timestamp(cell.getValue())),
+      cell: (cell) => renderSnippet(rawDataLinkCell, cell.getValue()),
     }),
     colHelp.accessor("first_srm_new", {
       header: () => renderSnippet(defaultHeaderTitle, "Eerste SRM new"),
@@ -168,6 +169,27 @@
           journey_number: row.journey_number,
         };
 
+        const vehicle_number =
+          row.vehicle_number == null ? "" : row.vehicle_number.toString();
+
+        row.first_openprio_message_raw_data_link = getRawDataLink(
+          row.data_owner_code,
+          vehicle_number,
+          row.first_openprio_message,
+        );
+
+        row.init_time_raw_data_link = getRawDataLink(
+          row.data_owner_code,
+          vehicle_number,
+          row.init_time,
+        );
+
+        row.target_departure_time_raw_data_link = getRawDataLink(
+          row.data_owner_code,
+          vehicle_number,
+          row.target_departure_time_first_stop,
+        );
+
         return row;
       });
     } catch (error) {
@@ -206,6 +228,20 @@
       >{datedJourneyLink.journey_number}</Link
     >
   </td>
+{/snippet}
+
+{#snippet rawDataLinkCell(content: RawDataLink)}
+  {#if content}
+    <td class="pr-8 text-sm">
+      <Link
+        to={content.content}
+        class="font-medium text-blue-600 hover:underline dark:text-blue-500"
+        >{content.linkText}
+      </Link>
+    </td>
+  {:else}
+    <td class="'bg-red-400' pb-4 pr-8 pt-4 text-sm"> </td>
+  {/if}
 {/snippet}
 
 <div class="flex h-screen flex-col">

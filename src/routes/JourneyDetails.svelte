@@ -18,6 +18,8 @@
   import { getPercentageBarData } from "../components/PercentageBarData";
   import PercentageBar from "../components/PercentageBar.svelte";
   import { extract_timestamp } from "../util/time_util";
+  import RawData from "./RawData.svelte";
+  import { getRawDataLink, type RawDataLink } from "../components/RawDataLink";
 
   let { dated_journey_id } = $props();
 
@@ -30,6 +32,7 @@
     route_distance_traveled: number;
     closest_distance_to_intersection: number;
     first_openprio_message: string;
+    first_openprio_message_raw_data_link: RawDataLink;
     last_openprio_message: string;
     first_srm_new: any;
     first_srm_updated: any;
@@ -162,7 +165,11 @@
         // row.openprio_received_ratio = getPercentageBarData( row.count_openprio_received / row.count_intersections);
         // row.processing_ratio = getPercentageBarData( row.count_ssm_proccessing/ row.count_intersections);
         // row.success_ratio = getPercentageBarData( row.count_ssm_granted / row.count_intersections);
-
+        // row.first_openprio_message_raw_data_link = getRawDataLink(
+        //   row.data_owner_code,
+        //   row.vehicle_number,
+        //   row.init_time,
+        // );
         return row;
       });
     } catch (error) {
@@ -195,31 +202,38 @@
 
 <Navigation></Navigation>
 
-<div>
-  <table class="m-4 table-auto">
-    <thead class="thead-light">
-      <tr>
-        {#each table.getHeaderGroups() as headerGroup}
-          {#each headerGroup.headers as header}
-            <FlexRender
-              content={header.column.columnDef.header}
-              context={header.getContext()}
-            />
+<div class="flex h-screen flex-col">
+  <header class="pb-8">
+    <Navigation></Navigation>
+  </header>
+  <main class="flex-1 overflow-y-auto pt-4">
+    <div>
+      <table class="m-4 table-auto">
+        <thead class="thead-light">
+          <tr>
+            {#each table.getHeaderGroups() as headerGroup}
+              {#each headerGroup.headers as header}
+                <FlexRender
+                  content={header.column.columnDef.header}
+                  context={header.getContext()}
+                />
+              {/each}
+            {/each}
+          </tr>
+        </thead>
+        <tbody>
+          {#each table.getRowModel().rows as row}
+            <tr>
+              {#each row.getVisibleCells() as cell}
+                <FlexRender
+                  content={cell.column.columnDef.cell}
+                  context={cell.getContext()}
+                />
+              {/each}
+            </tr>
           {/each}
-        {/each}
-      </tr>
-    </thead>
-    <tbody>
-      {#each table.getRowModel().rows as row}
-        <tr>
-          {#each row.getVisibleCells() as cell}
-            <FlexRender
-              content={cell.column.columnDef.cell}
-              context={cell.getContext()}
-            />
-          {/each}
-        </tr>
-      {/each}
-    </tbody>
-  </table>
+        </tbody>
+      </table>
+    </div>
+  </main>
 </div>
