@@ -29,6 +29,7 @@
   import { extract_timestamp_millis } from "../util/time_util";
   import { CircleLayer, MapLibre, GeoJSON } from "svelte-maplibre";
   import type { Feature, FeatureCollection, Point } from "geojson";
+  import type { RequestStatusUpdate } from "../components/RequestStatusUpdate";
 
   onMount(async () => {
     initFlowbite();
@@ -38,8 +39,9 @@
     location_timestamp: string;
     dataowner_code: string;
     vehicle_number: number;
-    msg_type: string;
-    prioritization_response_status: string;
+    type_of_msg: string;
+    status: string;
+    combined_request_status: RequestStatusUpdate;
     longitude: number;
     latitude: number;
     latency: number;
@@ -59,6 +61,7 @@
     transit_status_at_stopline: boolean;
     transit_schedule: number;
     pbc_rejection: string;
+    intersection_name: string;
   };
 
   const colHelp = createColumnHelper<RawDataRecord>();
@@ -78,11 +81,11 @@
       header: () => renderSnippet(defaultHeaderTitle, "latency [ms]"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
     }),
-    colHelp.accessor("msg_type", {
-      header: () => renderSnippet(defaultHeaderTitle, "msg_type"),
-      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    colHelp.accessor("combined_request_status", {
+      header: () => renderSnippet(defaultHeaderTitle, "status"),
+      cell: (cell) => renderSnippet(requestStatusCell, cell.getValue()),
     }),
-    colHelp.accessor("intersection", {
+    colHelp.accessor("intersection_name", {
       header: () => renderSnippet(defaultHeaderTitle, "Kruising"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
     }),
@@ -179,14 +182,14 @@
   let activeRow: number = $state(-1);
 
   function getFeedbackColor(msg: RawDataRecord) {
-    if (msg.msg_type == "srm") {
-      return srm_to_color(msg.prioritization_response_status);
+    if (msg.type_of_msg == "srm") {
+      return srm_to_color(msg.status);
     }
     if (msg.pbc_rejection != "NO_ERROR") {
       return "#dc2626";
     }
-    if (msg.msg_type == "ssm") {
-      return ssm_to_color(msg.prioritization_response_status);
+    if (msg.type_of_msg == "ssm") {
+      return ssm_to_color(msg.status);
     }
     return "#000000";
   }
@@ -230,8 +233,12 @@
         throw new Error("Network response was not ok");
       }
       let result = await response.json();
-      rows = result.map((rawDataRecord: RawDataRecord) => {
-        return rawDataRecord;
+      rows = result.map((row: RawDataRecord) => {
+        row.combined_request_status = {
+          type_of_msg: row.type_of_msg,
+          status: row.status,
+        };
+        return row;
       });
       let features = result.map((rawDataRecord: RawDataRecord) => {
         let historyPoint: Feature<Point> = {
@@ -241,7 +248,7 @@
             coordinates: [rawDataRecord.longitude, rawDataRecord.latitude],
           },
           properties: {
-            type_of_message: rawDataRecord.msg_type,
+            type_of_message: rawDataRecord.type_of_msg,
             "border-color": "#000000",
             color: getFeedbackColor(rawDataRecord),
             tlc_id: 1,
@@ -385,6 +392,58 @@
 
 {#snippet defaultCell(content: any)}
   <td class="pr-8 text-sm">{content}</td>
+{/snippet}
+
+{#snippet requestStatusCell(content: RequestStatusUpdate)}
+  <td class="py-2 pr-8 text-sm">
+    {#if content != null}
+      {#if content.type_of_msg == "srm"}
+        <div class="flex flex-row">
+          <div
+            class="rounded-l border-b border-l border-t border-gray-500 bg-white p-0.5 text-sm"
+          >
+            SRM
+          </div>
+          {#if content.status == "priorityRequestNew"}
+            <div class="rounded-r bg-green-400 p-0.5 text-sm">NEW</div>
+          {:else if content.status == "priorityRequestUpdate"}
+            <div class="rounded-r bg-yellow-500 p-0.5 text-sm">UPDATE</div>
+          {:else}
+            <div class="rounded-r bg-red-500 p-0.5 text-sm">CANCEL</div>
+          {/if}
+        </div>
+      {:else if content.type_of_msg == "ssm"}
+        <div class="flex flex-row">
+          <div
+            class="rounded-l border-b border-l border-t border-gray-500 bg-white p-0.5 text-sm"
+          >
+            SSM
+          </div>
+          {#if content.status == "GRANTED"}
+            <div class="rounded-r bg-green-600 p-1 text-sm">
+              {content.status}
+            </div>
+          {:else if content.status == "REQUESTED"}
+            <div class="rounded-r bg-green-200 p-1 text-sm">
+              {content.status}
+            </div>
+          {:else if content.status == "REJECTED"}
+            <div class="rounded-r bg-red-700 p-1 text-sm">
+              {content.status}
+            </div>
+          {:else if content.status == "PROCESSING"}
+            <div class="rounded-r bg-blue-100 p-1 text-sm">
+              {content.status}
+            </div>
+          {:else}
+            <div class="rounded-r bg-gray-100 p-1 text-sm">
+              {content.status}?
+            </div>
+          {/if}
+        </div>
+      {/if}
+    {/if}
+  </td>
 {/snippet}
 
 <div class="flex h-screen flex-col">
