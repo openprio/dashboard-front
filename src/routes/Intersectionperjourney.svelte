@@ -12,6 +12,14 @@
   import { extract_timestamp } from "../util/time_util";
   import { Link } from "svelte-routing";
   import { getRawDataLink, type RawDataLink } from "../components/RawDataLink";
+  import OperatingHoursToggle from "../components/OperatingHoursToggle.svelte";
+  import filterOperatingSub from "../components/OperatingHoursStore";
+
+  let filterOperatingHours = $state(false);
+
+  filterOperatingSub.sub((value) => {
+    filterOperatingHours = value.valueOf();
+  });
 
   type DatedJourneyLink = {
     dated_journey_id: number;
@@ -132,10 +140,6 @@
     }),
   ];
 
-  let operationDate = $state(new Date().toJSON().slice(0, 10));
-  let roadRegulators = $state([]);
-  let selectedRoadRegulator = $state();
-
   let rows: IntersectionPass[] = $state([]);
   // Create the table.
   let table = createSvelteTable({
@@ -146,11 +150,16 @@
     getCoreRowModel: getCoreRowModel(),
   });
 
-  async function loadData(operationDate, roadRegulator, intersectionId) {
+  async function loadData(
+    operationDate,
+    roadRegulator,
+    intersectionId,
+    filterOperatingHours,
+  ) {
     let token = await getIdToken();
     try {
       let response = await fetch(
-        `https://dashboard-api.openprio.nl/intersection_stats_per_journey?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}&line_planning_number=${line_planning_number}&direction=${direction}`,
+        `https://dashboard-api.openprio.nl/intersection_stats_per_journey?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}&line_planning_number=${line_planning_number}&direction=${direction}&filter_operating_hours=${filterOperatingHours}`,
         {
           headers: {
             Authorization: "Bearer " + token,
@@ -198,7 +207,12 @@
   }
 
   $effect(() => {
-    loadData(operation_day, road_regulator_id, intersection_id);
+    loadData(
+      operation_day,
+      road_regulator_id,
+      intersection_id,
+      filterOperatingHours,
+    );
   });
 </script>
 
@@ -249,6 +263,11 @@
     <Navigation></Navigation>
   </header>
   <main class="flex-1 overflow-y-auto pt-4">
+    <div class="flex flex-row">
+      <div class="mx-4 my-2 flex-col">
+        <OperatingHoursToggle></OperatingHoursToggle>
+      </div>
+    </div>
     <div>
       <table class="mx-4 table-auto">
         <thead class="thead-light">
