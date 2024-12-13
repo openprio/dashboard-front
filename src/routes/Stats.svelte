@@ -254,6 +254,8 @@
     },
     scales: {
       y: {
+        min: 0,
+        max: 100,
         ticks: {
           // Include a dollar sign in the ticks
           callback: function (value, index, ticks) {
@@ -326,8 +328,9 @@
     scales: {
       y: {
         type: "linear", // Linear scale for the y-axis
-        suggestedMin: 0,
-        suggestedMax: 100,
+        min: 0,
+        max: 100,
+
         ticks: {
           // Include a dollar sign in the ticks
           callback: function (value, index, ticks) {
