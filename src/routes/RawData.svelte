@@ -89,6 +89,19 @@
       header: () => renderSnippet(defaultHeaderTitle, "Kruising"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
     }),
+    colHelp.accessor("transit_status_at_stopline", {
+      header: () => renderSnippet(defaultHeaderTitle, "at_stopline"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("transit_schedule", {
+      header: () => renderSnippet(defaultHeaderTitle, "transit_schedule"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("eta_stopline", {
+      header: () => renderSnippet(defaultHeaderTitle, "ETA stopline"),
+      cell: (cell) =>
+        renderSnippet(defaultCell, extract_timestamp_millis(cell.getValue())),
+    }),
     colHelp.accessor("bearing", {
       header: () => renderSnippet(defaultHeaderTitle, "Richting [deg]"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
@@ -330,9 +343,9 @@
     updatedUrl.searchParams.set("timestamp", timestamp.valueOf().toString());
 
     // temporary disable
-    // if (currentUrl.href !== updatedUrl.href) {
-    //   history.pushState(null, "", updatedUrl);
-    // }
+    if (currentUrl.href !== updatedUrl.href) {
+      history.replaceState(null, "", updatedUrl);
+    }
   }
 
   function setDataOwner(newDataownerCode) {
@@ -684,7 +697,7 @@
     <div class="static w-full">
       <table class="m-4 table-auto">
         <thead class="thead-light">
-          <tr>
+          <tr class="sticky top-0 z-10 bg-gray-100">
             {#each table.getHeaderGroups() as headerGroup}
               {#each headerGroup.headers as header}
                 <FlexRender
@@ -729,7 +742,7 @@
         </tbody>
       </table>
       {#if showMap}
-        <div class="fixed bottom-0 end-0 z-40 me-2 h-[94vh] w-1/2">
+        <div class="fixed bottom-0 end-0 z-40 me-2 h-[50vh] w-1/2">
           <CloseButton
             class="absolute end-0 z-50 m-4 bg-gray-50"
             on:click={() => (showMap = false)}
@@ -738,7 +751,7 @@
             bind:map
             center={[4.3489627, 52.0248904]}
             zoom={10}
-            class="mt-6 h-[100vh] w-full md:mt-0"
+            class="mt-6 h-[50vh] w-full md:mt-0"
             standardControls
             style={"https://api.maptiler.com/maps/52e8038c-e9df-4d0e-a6cc-1269d04c9c19/style.json?key=wMttElGnvszMrzou5eQJ"}
           >

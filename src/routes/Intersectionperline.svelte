@@ -150,7 +150,7 @@
     try {
       let token = await getIdToken();
       let response = await fetch(
-        `https://dashboard-api.openprio.nl/intersection_stats_per_line?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}&&filter_operating_hours=${filterOperatingHours}`,
+        `https://dashboard-api.openprio.nl/intersection_stats_per_line?road_regulator=${roadRegulator}&operation_date=${operationDate}&intersection=${intersectionId}&filter_operating_hours=${filterOperatingHours}`,
         {
           headers: {
             Authorization: "Bearer " + token,
