@@ -62,6 +62,8 @@
     transit_schedule: number;
     pbc_rejection: string;
     intersection_name: string;
+    request_id: number;
+    sequence_number: number;
   };
 
   const colHelp = createColumnHelper<RawDataRecord>();
@@ -87,6 +89,14 @@
     }),
     colHelp.accessor("intersection_name", {
       header: () => renderSnippet(defaultHeaderTitle, "Kruising"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("request_id", {
+      header: () => renderSnippet(defaultHeaderTitle, "request_id"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("sequence_number", {
+      header: () => renderSnippet(defaultHeaderTitle, "sequence_number"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
     }),
     colHelp.accessor("transit_status_at_stopline", {
