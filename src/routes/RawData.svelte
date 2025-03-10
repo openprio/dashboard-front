@@ -264,6 +264,7 @@
         row.combined_request_status = {
           type_of_msg: row.type_of_msg,
           status: row.status,
+          door_status: row.door_opening_status,
         };
         return row;
       });
@@ -423,53 +424,62 @@
 
 {#snippet requestStatusCell(content: RequestStatusUpdate)}
   <td class="py-2 pr-8 text-sm">
-    {#if content != null}
-      {#if content.type_of_msg == "srm"}
-        <div class="flex flex-row">
-          <div
-            class="rounded-l border-b border-l border-t border-gray-500 bg-white p-0.5 text-sm"
-          >
-            SRM
-          </div>
-          {#if content.status == "priorityRequestNew"}
-            <div class="rounded-r bg-green-400 p-0.5 text-sm">NEW</div>
-          {:else if content.status == "priorityRequestUpdate"}
-            <div class="rounded-r bg-yellow-500 p-0.5 text-sm">UPDATE</div>
-          {:else}
-            <div class="rounded-r bg-red-500 p-0.5 text-sm">CANCEL</div>
-          {/if}
-        </div>
-      {:else if content.type_of_msg == "ssm"}
-        <div class="flex flex-row">
-          <div
-            class="rounded-l border-b border-l border-t border-gray-500 bg-white p-0.5 text-sm"
-          >
-            SSM
-          </div>
-          {#if content.status == "GRANTED"}
-            <div class="rounded-r bg-green-600 p-1 text-sm">
-              {content.status}
-            </div>
-          {:else if content.status == "REQUESTED"}
-            <div class="rounded-r bg-green-200 p-1 text-sm">
-              {content.status}
-            </div>
-          {:else if content.status == "REJECTED"}
-            <div class="rounded-r bg-red-700 p-1 text-sm">
-              {content.status}
-            </div>
-          {:else if content.status == "PROCESSING"}
-            <div class="rounded-r bg-blue-100 p-1 text-sm">
-              {content.status}
-            </div>
-          {:else}
-            <div class="rounded-r bg-gray-100 p-1 text-sm">
-              {content.status}?
-            </div>
-          {/if}
-        </div>
+    <div class="flex flex-row items-center">
+      {#if content.door_status == 1}
+        <div class="m-1 h-6 rounded bg-red-500 pe-1 text-sm"></div>
+      {:else if content.door_status == 2}
+        <div class="m-1 h-6 rounded bg-green-500 pe-1 text-sm"></div>
+      {:else if content.door_status == 3}
+        <div class="m-1 h-6 rounded bg-yellow-500 pe-1 text-sm"></div>
       {/if}
-    {/if}
+      {#if content != null}
+        {#if content.type_of_msg == "srm"}
+          <div class="flex flex-row">
+            <div
+              class="rounded-l border-b border-l border-t border-gray-500 bg-white p-0.5 text-sm"
+            >
+              SRM
+            </div>
+            {#if content.status == "priorityRequestNew"}
+              <div class="rounded-r bg-green-400 p-0.5 text-sm">NEW</div>
+            {:else if content.status == "priorityRequestUpdate"}
+              <div class="rounded-r bg-yellow-500 p-0.5 text-sm">UPDATE</div>
+            {:else}
+              <div class="rounded-r bg-red-500 p-0.5 text-sm">CANCEL</div>
+            {/if}
+          </div>
+        {:else if content.type_of_msg == "ssm"}
+          <div class="flex flex-row">
+            <div
+              class="rounded-l border-b border-l border-t border-gray-500 bg-white p-0.5 text-sm"
+            >
+              SSM
+            </div>
+            {#if content.status == "GRANTED"}
+              <div class="rounded-r bg-green-600 p-1 text-sm">
+                {content.status}
+              </div>
+            {:else if content.status == "REQUESTED"}
+              <div class="rounded-r bg-green-200 p-1 text-sm">
+                {content.status}
+              </div>
+            {:else if content.status == "REJECTED"}
+              <div class="rounded-r bg-red-700 p-1 text-sm">
+                {content.status}
+              </div>
+            {:else if content.status == "PROCESSING"}
+              <div class="rounded-r bg-blue-100 p-1 text-sm">
+                {content.status}
+              </div>
+            {:else}
+              <div class="rounded-r bg-gray-100 p-1 text-sm">
+                {content.status}?
+              </div>
+            {/if}
+          </div>
+        {/if}
+      {/if}
+    </div>
   </td>
 {/snippet}
 
