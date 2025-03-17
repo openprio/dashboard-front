@@ -36,7 +36,6 @@
   } from "svelte-maplibre";
   import type { Feature, FeatureCollection, Point } from "geojson";
   import type { RequestStatusUpdate } from "../components/RequestStatusUpdate";
-  import MeasuresControl from "maplibre-gl-measures";
 
   onMount(async () => {
     initFlowbite();
@@ -392,10 +391,6 @@
       features: features,
     };
   }
-
-  $effect(() => {
-    map.addControl(new MeasuresControl({}), "top-right");
-  });
 
   $effect(() => {
     if (dataownerCode == "" || vehicleNumber == "") {
