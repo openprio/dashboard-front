@@ -27,9 +27,16 @@
   import { ChevronDownOutline, SearchOutline } from "flowbite-svelte-icons";
   import { initFlowbite } from "flowbite";
   import { extract_timestamp_millis } from "../util/time_util";
-  import { CircleLayer, MapLibre, GeoJSON } from "svelte-maplibre";
+  import {
+    CircleLayer,
+    MapLibre,
+    GeoJSON,
+    RasterTileSource,
+    RasterLayer,
+  } from "svelte-maplibre";
   import type { Feature, FeatureCollection, Point } from "geojson";
   import type { RequestStatusUpdate } from "../components/RequestStatusUpdate";
+  import MeasuresControl from "maplibre-gl-measures";
 
   onMount(async () => {
     initFlowbite();
@@ -385,6 +392,10 @@
       features: features,
     };
   }
+
+  $effect(() => {
+    map.addControl(new MeasuresControl({}), "top-right");
+  });
 
   $effect(() => {
     if (dataownerCode == "" || vehicleNumber == "") {
@@ -779,6 +790,15 @@
             standardControls
             style={"https://api.maptiler.com/maps/52e8038c-e9df-4d0e-a6cc-1269d04c9c19/style.json?key=wMttElGnvszMrzou5eQJ"}
           >
+            <RasterTileSource
+              tiles={[
+                "https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.png",
+              ]}
+              tileSize={256}
+            >
+              <RasterLayer minzoom={14} />
+            </RasterTileSource>
+
             <GeoJSON id="positions" data={locationHistoryGeoJSON}>
               <CircleLayer
                 id="cluster_circles"
