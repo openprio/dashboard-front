@@ -134,6 +134,14 @@
       header: () => renderSnippet(defaultHeaderTitle, "Aantal satellieten"),
       cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
     }),
+    colHelp.accessor("driving_direction", {
+      header: () => renderSnippet(defaultHeaderTitle, "Actieve cabine"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
+    colHelp.accessor("odometer", {
+      header: () => renderSnippet(defaultHeaderTitle, "Odometer [m]"),
+      cell: (cell) => renderSnippet(defaultCell, cell.getValue()),
+    }),
   ];
 
   type BoundingBox = [[number, number], [number, number]];
