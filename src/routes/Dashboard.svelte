@@ -66,7 +66,6 @@
       .then((response) => response.json())
       .then((geojson) => {
         let features = geojson.features.map((feature) => {
-          console.log(feature);
           var options = {
             properties: {
               color: numberToColorHex(feature.properties.intersectionID),
@@ -381,7 +380,7 @@
         {#each markers as marker (marker.vehicleDescriptor.dataOwnerCode + ":" + marker.vehicleDescriptor.vehicleNumber)}
           <Marker
             lngLat={[marker.position.longitude, marker.position.latitude]}
-            class="z-10 grid h-8 w-8 place-items-center"
+            class="relative z-10 grid h-8 w-8 place-items-center"
             on:click={() => {
               selectedVehicle = marker;
               subscribe.subscribe_on_feedback(
@@ -391,43 +390,74 @@
               resetLocationHistory();
             }}
           >
-            <!-- Triangle -->
             {#if selectedVehicle != null && marker.vehicleDescriptor.dataOwnerCode + ":" + marker.vehicleDescriptor.vehicleNumber == selectedVehicle.vehicleDescriptor.dataOwnerCode + ":" + selectedVehicle.vehicleDescriptor.vehicleNumber}
+              <!-- Selected Marker -->
               <div
-                class="h-0 w-0
-                    border-b-[32px] border-l-[13px] border-r-[13px]
-                    border-b-yellow-500 border-l-transparent border-r-transparent"
+                class="relative flex flex-col items-center"
                 style="transform: rotate({marker.position.bearing}deg);"
               >
+                <!-- Arrow -->
                 <div
-                  class="relative right-[12px] top-[2px] h-0 w-0
-                        border-b-[29px] border-l-[12px]
-                        border-r-[12px] border-b-white
-                        border-l-transparent border-r-transparent
-                    "
+                  class="h-0 w-0
+        border-b-[36px] border-l-[14px] border-r-[14px]
+        border-b-yellow-400 border-l-transparent border-r-transparent
+        drop-shadow-md transition-all duration-300"
+                ></div>
+
+                <!-- Inner white layer for 3D look -->
+                <div
+                  class="absolute top-[3px] h-0 w-0
+        border-b-[30px] border-l-[12px] border-r-[12px]
+        border-b-white border-l-transparent border-r-transparent"
+                ></div>
+
+                <!-- Label -->
+                <div
+                  class="absolute -right-[25px] top-[18px] rotate-90
+        rounded-md bg-yellow-400/90 px-1.5 py-[1px] text-[9px]
+        font-semibold text-gray-900 shadow-sm backdrop-blur-sm"
                 >
-                  <div class="rotate-90 text-[8px] text-gray-800">
+                  {#if marker.vehicleDescriptor.journeyDescriptor?.linePlanningNumber && marker.vehicleDescriptor.journeyDescriptor.linePlanningNumber != 0}
+                    {marker.vehicleDescriptor.journeyDescriptor
+                      .linePlanningNumber}
+                  {:else}
                     {marker.vehicleDescriptor.dataOwnerCode}
-                  </div>
+                  {/if}
                 </div>
               </div>
             {:else}
+              <!-- Default Marker -->
               <div
-                class="h-0 w-0
-                      border-b-[32px] border-l-[13px] border-r-[13px]
-                      border-b-black border-l-transparent border-r-transparent"
+                class="relative flex flex-col items-center"
                 style="transform: rotate({marker.position.bearing}deg);"
               >
+                <!-- Arrow -->
                 <div
-                  class="relative right-[12px] top-[2px] h-0 w-0
-                      border-b-[29px] border-l-[12px]
-                      border-r-[12px] border-b-white
-                      border-l-transparent border-r-transparent
-                     "
+                  class="h-0 w-0
+        border-b-[36px] border-l-[14px] border-r-[14px]
+        border-b-gray-800 border-l-transparent border-r-transparent
+        drop-shadow-sm transition-all duration-300"
+                ></div>
+
+                <!-- Inner white layer for 3D look -->
+                <div
+                  class="absolute top-[3px] h-0 w-0
+        border-b-[30px] border-l-[12px] border-r-[12px]
+        border-b-white border-l-transparent border-r-transparent"
+                ></div>
+
+                <!-- Label -->
+                <div
+                  class="absolute -right-[25px] top-[18px] rotate-90
+        rounded-md bg-gray-800/90 px-1.5 py-[1px] text-[9px]
+        font-semibold text-white shadow-sm backdrop-blur-sm"
                 >
-                  <div class="rotate-90 text-[8px] text-gray-800">
+                  {#if marker.vehicleDescriptor.journeyDescriptor?.linePlanningNumber && marker.vehicleDescriptor.journeyDescriptor.linePlanningNumber != 0}
+                    {marker.vehicleDescriptor.journeyDescriptor
+                      .linePlanningNumber}
+                  {:else}
                     {marker.vehicleDescriptor.dataOwnerCode}
-                  </div>
+                  {/if}
                 </div>
               </div>
             {/if}
@@ -555,6 +585,34 @@
                 >
               </div>
             </div>
+            {#if selectedVehicle.vehicleDescriptor.journeyDescriptor.operatingDay != 0}
+              <div class="flex flex-col">
+                <h1 class="text-lg font-bold">Rit</h1>
+                <div class="flex flex-col">
+                  <div class="flex justify-between gap-2">
+                    <h3>LinePlanningNumber</h3>
+                    <span
+                      >{selectedVehicle.vehicleDescriptor.journeyDescriptor
+                        .linePlanningNumber}</span
+                    >
+                  </div>
+                  <div class="flex justify-between gap-2">
+                    <h3>JourneyNumber</h3>
+                    <span
+                      >{selectedVehicle.vehicleDescriptor.journeyDescriptor
+                        .journeyNumber}</span
+                    >
+                  </div>
+                  <div class="flex justify-between gap-2">
+                    <h3>OperationDay</h3>
+                    <span
+                      >{selectedVehicle.vehicleDescriptor.journeyDescriptor
+                        .operatingDay}</span
+                    >
+                  </div>
+                </div>
+              </div>
+            {/if}
           </div>
           {#if $userCredential}
             <div
