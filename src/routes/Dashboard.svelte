@@ -585,7 +585,7 @@
                 >
               </div>
             </div>
-            {#if selectedVehicle.vehicleDescriptor.journeyDescriptor.operatingDay != 0}
+            {#if selectedVehicle.vehicleDescriptor.journeyDescriptor != null}
               <div class="flex flex-col">
                 <h1 class="text-lg font-bold">Rit</h1>
                 <div class="flex flex-col">
