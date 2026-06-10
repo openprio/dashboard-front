@@ -7,7 +7,7 @@
   import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
   import Dashboard from "./Dashboard.svelte";
   import LoadingSpinner from "../components/LoadingSpinner.svelte";
-  import { navigate } from "svelte-routing";
+  import { navigate, link } from "svelte-routing";
 
   const dispatch = createEventDispatcher();
 
@@ -81,6 +81,9 @@
         class="w-48 rounded border border-gray-800 bg-blue-700 px-2 py-1 py-1 text-white"
         >Login</button
       >
+      <a href="/forgot-password" use:link class="text-sm text-blue-700 underline">
+        Wachtwoord vergeten?
+      </a>
     </form>
   </div>
 {/if}

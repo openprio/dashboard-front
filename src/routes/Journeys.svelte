@@ -21,6 +21,7 @@
   import filterOperatingSub from "../components/OperatingHoursStore";
   import { extract_timestamp } from "../util/time_util";
   import { getRawDataLink, type RawDataLink } from "../components/RawDataLink";
+  import { DATA_OWNER_CODES, DEFAULT_DATA_OWNER_CODE } from "../constants.js";
 
   let filterOperatingHours = $state(false);
 
@@ -131,24 +132,8 @@
   ];
 
   let operationDate = $state(new Date().toJSON().slice(0, 10));
-  let dataOwners = $state([
-    {
-      dataOwnerCode: "HTM",
-    },
-    {
-      dataOwnerCode: "EBS",
-    },
-    {
-      dataOwnerCode: "KEOLIS",
-    },
-    {
-      dataOwnerCode: "CXX",
-    },
-    {
-      dataOwnerCode: "ARR",
-    },
-  ]);
-  let selectedDataOwner = $state("HTM");
+  let dataOwners = $state(DATA_OWNER_CODES.map((code) => ({ dataOwnerCode: code })));
+  let selectedDataOwner = $state(DEFAULT_DATA_OWNER_CODE);
 
   let directionOptions = $state([
     {

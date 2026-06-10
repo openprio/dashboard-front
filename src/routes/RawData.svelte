@@ -27,6 +27,7 @@
   import { ChevronDownOutline, SearchOutline } from "flowbite-svelte-icons";
   import { initFlowbite } from "flowbite";
   import { extract_timestamp_millis } from "../util/time_util";
+  import { DATA_OWNER_CODES, DEFAULT_DATA_OWNER_CODE } from "../constants.js";
   import {
     CircleLayer,
     MapLibre,
@@ -314,7 +315,7 @@
   }
 
   let selectedDate = $state(new Date());
-  let dataownerCode = $state("HTM");
+  let dataownerCode = $state(DEFAULT_DATA_OWNER_CODE);
 
   let vehicleNumber = $state("");
 
@@ -511,8 +512,9 @@
           {dataownerCode}<ChevronDownOutline class="h-6 w-6" />
         </Button>
         <Dropdown>
-          <DropdownItem onclick={() => setDataOwner("HTM")}>HTM</DropdownItem>
-          <DropdownItem onclick={() => setDataOwner("EBS")}>EBS</DropdownItem>
+          {#each DATA_OWNER_CODES as code}
+            <DropdownItem onclick={() => setDataOwner(code)}>{code}</DropdownItem>
+          {/each}
         </Dropdown>
         <Input placeholder="Grootwagennummer" bind:value={vehicleNumber} />
       </ButtonGroup>

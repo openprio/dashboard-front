@@ -9,6 +9,9 @@
   import JourneyDetails from "./routes/JourneyDetails.svelte";
   import Stats from "./routes/Stats.svelte";
   import RawData from "./routes/RawData.svelte";
+  import AdminUsers from "./routes/AdminUsers.svelte";
+  import ForgotPassword from "./routes/ForgotPassword.svelte";
+  import ResetPassword from "./routes/ResetPassword.svelte";
 
   export let url = "";
 </script>
@@ -51,6 +54,9 @@
     <Route path="/raw_data" component={RawData} />
     <Route path="/journeys" component={Journeys} />
     <Route path="/login" component={Login} />
+    <Route path="/forgot-password" component={ForgotPassword} />
+    <Route path="/reset-password" component={ResetPassword} />
+    <Route path="/admin/users" component={AdminUsers} />
     <Route path="/"><Dashboard /></Route>
   </div>
 </Router>

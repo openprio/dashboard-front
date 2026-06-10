@@ -1,6 +1,6 @@
 <script>
   import { firebaseAuth } from "../firebase.js";
-  import { userCredential } from "../auth.js";
+  import { userCredential, currentUser } from "../auth.js";
   import { signOut } from "firebase/auth";
   import { link } from "svelte-routing";
 
@@ -65,6 +65,14 @@
         </div>
         <div></div></a
       >
+      {#if $currentUser?.admin}
+        <a href="/admin/users" use:link class="flex flex-row items-center gap-4">
+          <div class="flex flex-col items-center">
+            <span class="text-l text-white">Gebruikers</span>
+          </div>
+          <div></div></a
+        >
+      {/if}
     {/if}
   </div>
   {#if !$userCredential}

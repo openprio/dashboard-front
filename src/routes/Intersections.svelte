@@ -111,6 +111,8 @@
   // Default on Delft
   let selectedRoadRegulator = $state(31075);
 
+  const LAST_ROAD_REGULATOR_KEY = "lastSelectedRoadRegulator";
+
   function loadQueryParams() {
     const urlParams = new URLSearchParams(window.location.search);
     const hasRoadRegulator = urlParams.has("road_regulator");
@@ -124,6 +126,11 @@
 
     if (hasRoadRegulator) {
       selectedRoadRegulator = parseInt(urlParams.get("road_regulator"));
+    } else {
+      const lastRegulator = localStorage.getItem(LAST_ROAD_REGULATOR_KEY);
+      if (lastRegulator) {
+        selectedRoadRegulator = parseInt(lastRegulator);
+      }
     }
   }
   loadQueryParams();
@@ -208,6 +215,9 @@
   let timeoutId;
   $effect(() => {
     loadData(operationDate, selectedRoadRegulator, filterOperatingHours);
+
+    // Save to localStorage for persistence
+    localStorage.setItem(LAST_ROAD_REGULATOR_KEY, selectedRoadRegulator.toString());
 
     // delay updating URL with 500ms
     if (timeoutId) clearTimeout(timeoutId);
