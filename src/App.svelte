@@ -7,6 +7,8 @@
   import IntersectionPerJourney from "./routes/Intersectionperjourney.svelte";
   import Journeys from "./routes/Journeys.svelte";
   import JourneyDetails from "./routes/JourneyDetails.svelte";
+  import Vehicles from "./routes/Vehicles.svelte";
+  import VehicleDetails from "./routes/VehicleDetails.svelte";
   import Stats from "./routes/Stats.svelte";
   import RawData from "./routes/RawData.svelte";
   import AdminUsers from "./routes/AdminUsers.svelte";
@@ -50,6 +52,14 @@
     </Route>
 
     <Route path="/journeys" component={Journeys} />
+    <Route path="/vehicles/:data_owner_code/:vehicle_number/:operation_date" let:params>
+      <VehicleDetails
+        data_owner_code={params.data_owner_code}
+        vehicle_number={params.vehicle_number}
+        operation_date={params.operation_date}
+      />
+    </Route>
+    <Route path="/vehicles" component={Vehicles} />
     <Route path="/stats" component={Stats} />
     <Route path="/raw_data" component={RawData} />
     <Route path="/journeys" component={Journeys} />
