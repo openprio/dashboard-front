@@ -10,12 +10,21 @@
     renderSnippet,
   } from "../lib/table";
   import { Link } from "svelte-routing";
-  import { getIdToken } from "../auth";
+  import {
+    canManageVehicleCredentials,
+    currentUser,
+    getIdToken,
+    reportPreferences,
+  } from "../auth";
   import type { PercentageBarData } from "../components/PercentageBarData";
   import { getPercentageBarData } from "../components/PercentageBarData";
   import PercentageBar from "../components/PercentageBar.svelte";
   import OperatingHoursToggle from "../components/OperatingHoursToggle.svelte";
   import filterOperatingSub from "../components/OperatingHoursStore";
+  import VehicleCredentials, {
+    type VehicleCredential,
+  } from "../components/VehicleCredentials.svelte";
+  import { listVehicleCredentials } from "../api.js";
   import { DATA_OWNER_CODES, DEFAULT_DATA_OWNER_CODE } from "../constants.js";
 
   let filterOperatingHours = $state(false);
@@ -106,6 +115,37 @@
   let operationDate = $state(new Date().toJSON().slice(0, 10));
   let dataOwners = $state(DATA_OWNER_CODES.map((code) => ({ dataOwnerCode: code })));
   let selectedDataOwner = $state(DEFAULT_DATA_OWNER_CODE);
+  let activeTab = $state<"vehicles" | "credentials">("vehicles");
+
+  let canManageCredentials = $derived(
+    canManageVehicleCredentials(
+      $currentUser,
+      $reportPreferences,
+      selectedDataOwner,
+    ),
+  );
+
+  // Vehicle credentials for the selected data owner. Loaded here (not in the
+  // tab component) so the tab label can always show the total count.
+  let vehicleCredentials = $state<VehicleCredential[]>([]);
+  let credentialsLoading = $state(true);
+  let credentialsError = $state("");
+
+  async function loadCredentials(doc: string) {
+    credentialsLoading = true;
+    credentialsError = "";
+    try {
+      vehicleCredentials = await listVehicleCredentials(doc);
+    } catch (e) {
+      credentialsError = e.message || "Credentials kunnen niet worden geladen.";
+    } finally {
+      credentialsLoading = false;
+    }
+  }
+
+  $effect(() => {
+    loadCredentials(selectedDataOwner);
+  });
 
   function loadQueryParams() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -121,6 +161,9 @@
     if (hasDataownerCode) {
       selectedDataOwner = urlParams.get("dataowner_code");
     }
+
+    activeTab =
+      urlParams.get("tab") === "credentials" ? "credentials" : "vehicles";
   }
 
   loadQueryParams();
@@ -128,12 +171,17 @@
     loadQueryParams();
   });
 
-  function updateQueryParams(operationDate, selectedDataOwner) {
+  function updateQueryParams(operationDate, selectedDataOwner, activeTab) {
     const currentUrl = new URL(window.location.href);
     const updatedUrl = new URL(currentUrl);
 
     updatedUrl.searchParams.set("dataowner_code", selectedDataOwner);
     updatedUrl.searchParams.set("operation_date", operationDate);
+    if (activeTab === "credentials") {
+      updatedUrl.searchParams.set("tab", "credentials");
+    } else {
+      updatedUrl.searchParams.delete("tab");
+    }
 
     if (currentUrl.href !== updatedUrl.href) {
       history.pushState(null, "", updatedUrl);
@@ -201,10 +249,15 @@
   let timeoutId;
   $effect(() => {
     loadData(operationDate, selectedDataOwner, filterOperatingHours);
+  });
 
+  $effect(() => {
+    const date = operationDate;
+    const doc = selectedDataOwner;
+    const tab = activeTab;
     if (timeoutId) clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
-      updateQueryParams(operationDate, selectedDataOwner);
+      updateQueryParams(date, doc, tab);
     }, 500);
   });
 </script>
@@ -284,20 +337,6 @@
     <div class="flex flex-row">
       <div class="mx-4 my-2 flex-col">
         <label
-          for="operation_day"
-          class="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
-          >Operation day</label
-        >
-        <input
-          id="operation_day"
-          type="date"
-          value={operationDate}
-          oninput={(e) => (operationDate = e.target.value || operationDate)}
-        />
-      </div>
-
-      <div class="mx-4 my-2 flex-col">
-        <label
           for="data_owner"
           class="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
           >DataOwner</label
@@ -314,39 +353,104 @@
           {/each}
         </select>
       </div>
-
-      <div class="mx-4 my-2 flex-col">
-        <OperatingHoursToggle></OperatingHoursToggle>
-      </div>
     </div>
 
-    <div>
-      <table class="m-4 table-auto">
-        <thead class="thead-light">
-          <tr>
-            {#each table.getHeaderGroups() as headerGroup}
-              {#each headerGroup.headers as header}
-                <FlexRender
-                  content={header.column.columnDef.header}
-                  context={header.getContext()}
-                />
-              {/each}
-            {/each}
-          </tr>
-        </thead>
-        <tbody>
-          {#each table.getRowModel().rows as row}
+    <!-- Tab bar -->
+    <div class="mx-4 border-b border-gray-200 dark:border-gray-700">
+      <ul class="-mb-px flex flex-wrap text-center text-sm font-medium">
+        <li class="me-2">
+          <button
+            class="inline-block rounded-t-lg border-b-2 p-4 {activeTab ===
+            'vehicles'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300'}"
+            onclick={() => (activeTab = "vehicles")}
+          >
+            Voertuigen
+          </button>
+        </li>
+        <li class="me-2">
+          <button
+            class="inline-block rounded-t-lg border-b-2 p-4 {activeTab ===
+            'credentials'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300'}"
+            onclick={() => (activeTab = "credentials")}
+          >
+            Voertuigcredentials
+            {#if !credentialsLoading}
+              <span
+                class="ml-1 rounded-full px-2 py-0.5 text-xs {activeTab ===
+                'credentials'
+                  ? 'bg-blue-100 text-blue-800'
+                  : 'bg-gray-100 text-gray-600'}"
+              >
+                {vehicleCredentials.length}
+              </span>
+            {/if}
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    {#if activeTab === "vehicles"}
+      <div class="flex flex-row">
+        <div class="mx-4 my-2 flex-col">
+          <label
+            for="operation_day"
+            class="mb-2 block text-sm font-medium text-gray-900 dark:text-white"
+            >Operation day</label
+          >
+          <input
+            id="operation_day"
+            type="date"
+            value={operationDate}
+            oninput={(e) => (operationDate = e.target.value || operationDate)}
+          />
+        </div>
+
+        <div class="mx-4 my-2 flex-col">
+          <OperatingHoursToggle></OperatingHoursToggle>
+        </div>
+      </div>
+
+      <div>
+        <table class="m-4 table-auto">
+          <thead class="thead-light">
             <tr>
-              {#each row.getVisibleCells() as cell}
-                <FlexRender
-                  content={cell.column.columnDef.cell}
-                  context={cell.getContext()}
-                />
+              {#each table.getHeaderGroups() as headerGroup}
+                {#each headerGroup.headers as header}
+                  <FlexRender
+                    content={header.column.columnDef.header}
+                    context={header.getContext()}
+                  />
+                {/each}
               {/each}
             </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {#each table.getRowModel().rows as row}
+              <tr>
+                {#each row.getVisibleCells() as cell}
+                  <FlexRender
+                    content={cell.column.columnDef.cell}
+                    context={cell.getContext()}
+                  />
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    {:else}
+      <VehicleCredentials
+        dataOwner={selectedDataOwner}
+        canManage={canManageCredentials}
+        bind:credentials={vehicleCredentials}
+        loading={credentialsLoading}
+        loadError={credentialsError}
+        onreload={() => loadCredentials(selectedDataOwner)}
+      />
+    {/if}
   </main>
 </div>

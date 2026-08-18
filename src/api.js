@@ -70,6 +70,90 @@ export async function deleteUser(email) {
   return;
 }
 
+export async function getReportPreferences() {
+  const response = await fetchWithAuth("/me/report-preferences");
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || "Failed to get report preferences");
+  }
+  return await response.json();
+}
+
+// Vehicle credentials
+
+export async function listVehicleCredentials(dataOwnerCode) {
+  const response = await fetchWithAuth(
+    `/vehicle_credentials?data_owner_code=${encodeURIComponent(dataOwnerCode)}`,
+  );
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || "Failed to list vehicle credentials");
+  }
+  return await response.json();
+}
+
+export async function generateVehicleCredentials(entries) {
+  const response = await fetchWithAuth(
+    "/vehicle_credentials/generate?format=json",
+    {
+      method: "POST",
+      body: JSON.stringify(entries),
+    },
+  );
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || "Failed to generate vehicle credentials");
+  }
+  return await response.json();
+}
+
+export async function resetVehicleCredential(dataOwnerCode, vehicleNumber) {
+  const response = await fetchWithAuth(
+    `/vehicle_credentials/${encodeURIComponent(dataOwnerCode)}/${encodeURIComponent(vehicleNumber)}/reset`,
+    { method: "POST" },
+  );
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || "Failed to reset vehicle credential");
+  }
+  // 204 No Content
+  return;
+}
+
+export async function deleteVehicleCredential(dataOwnerCode, vehicleNumber) {
+  const response = await fetchWithAuth(
+    `/vehicle_credentials/${encodeURIComponent(dataOwnerCode)}/${encodeURIComponent(vehicleNumber)}`,
+    { method: "DELETE" },
+  );
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || "Failed to delete vehicle credential");
+  }
+  // 204 No Content
+  return;
+}
+
+/**
+ * Upserts the per-data-owner settings of a user (admin only).
+ * `settings` is sent as-is, e.g.:
+ * { can_manage_vehicle_credentials: true, daily_openprio_detection_report: false }
+ */
+export async function setDataOwnerSettings(email, dataOwnerCode, settings) {
+  const response = await fetchWithAuth(
+    `/admin/users/${encodeURIComponent(email)}/data-owners/${encodeURIComponent(dataOwnerCode)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    },
+  );
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || "Failed to update data owner settings");
+  }
+  // 204 No Content
+  return;
+}
+
 export async function forgotPassword(email) {
   const response = await fetchPublic("/forgot-password", {
     method: "POST",

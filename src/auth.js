@@ -1,9 +1,10 @@
 import { firebaseAuth, onAuthStateChanged } from "./firebase";
 import { writable } from "svelte/store";
-import { getCurrentUser } from "./api.js";
+import { getCurrentUser, getReportPreferences } from "./api.js";
 
 export const userCredential = writable(null);
 export const currentUser = writable(null);
+export const reportPreferences = writable([]);
 
 onAuthStateChanged(firebaseAuth, async (user) => {
   console.log(user);
@@ -17,12 +18,33 @@ onAuthStateChanged(firebaseAuth, async (user) => {
       console.error("Failed to load user profile", e);
       currentUser.set(null);
     }
+    try {
+      const prefs = await getReportPreferences();
+      reportPreferences.set(prefs);
+    } catch (e) {
+      console.error("Failed to load report preferences", e);
+      reportPreferences.set([]);
+    }
   } else {
     // User is signed out
     userCredential.set(null);
     currentUser.set(null);
+    reportPreferences.set([]);
   }
 });
+
+/**
+ * Whether the user may manage (generate/reset/delete) vehicle credentials
+ * for the given data owner. Admins implicitly have this permission for all
+ * data owners.
+ */
+export function canManageVehicleCredentials(user, preferences, dataOwnerCode) {
+  if (user?.admin) return true;
+  return (preferences ?? []).some(
+    (p) =>
+      p.data_owner_code === dataOwnerCode && p.can_manage_vehicle_credentials,
+  );
+}
 
 export const getIdToken = async () => {
   await firebaseAuth.authStateReady();

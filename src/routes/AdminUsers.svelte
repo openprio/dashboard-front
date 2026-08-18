@@ -1,6 +1,12 @@
 <script lang="ts">
   import { currentUser } from "../auth.js";
-  import { listUsers, createUser, deleteUser } from "../api.js";
+  import {
+    listUsers,
+    createUser,
+    deleteUser,
+    setDataOwnerSettings,
+  } from "../api.js";
+  import { DATA_OWNER_CODES } from "../constants.js";
   import LoadingSpinner from "../components/LoadingSpinner.svelte";
   import {
     Button,
@@ -16,8 +22,18 @@
     Modal,
     Alert,
   } from "flowbite-svelte";
-  import { TrashBinOutline, PlusOutline } from "flowbite-svelte-icons";
+  import {
+    TrashBinOutline,
+    PlusOutline,
+    UserSettingsOutline,
+  } from "flowbite-svelte-icons";
   import Navigation from "../components/Navigation.svelte";
+
+  type DataOwnerSetting = {
+    data_owner_code: string;
+    can_manage_vehicle_credentials: boolean;
+    daily_openprio_detection_report: boolean;
+  };
 
   type DashboardUser = {
     id: string;
@@ -27,6 +43,7 @@
     created_at: string;
     created_by: string;
     last_used_at: string | null;
+    data_owner_settings?: DataOwnerSetting[];
   };
 
   let users = $state<DashboardUser[]>([]);
@@ -43,6 +60,89 @@
   let userToDelete = $state<DashboardUser | null>(null);
   let deleteModalOpen = $state(false);
   let deleting = $state(false);
+
+  // Data-owner rights modal state
+  let rightsUser = $state<DashboardUser | null>(null);
+  let rightsModalOpen = $state(false);
+  let rightsCredentials = $state<Record<string, boolean>>({});
+  let rightsReports = $state<Record<string, boolean>>({});
+  let rightsSaving = $state(false);
+
+  function settingsFor(
+    user: DashboardUser,
+    dataOwnerCode: string,
+  ): { canManage: boolean; dailyReport: boolean } {
+    const setting = user.data_owner_settings?.find(
+      (s) => s.data_owner_code === dataOwnerCode,
+    );
+    return {
+      canManage: setting?.can_manage_vehicle_credentials ?? false,
+      dailyReport: setting?.daily_openprio_detection_report ?? false,
+    };
+  }
+
+  function openRights(user: DashboardUser) {
+    rightsUser = user;
+    rightsCredentials = Object.fromEntries(
+      DATA_OWNER_CODES.map((code) => [
+        code,
+        settingsFor(user, code).canManage,
+      ]),
+    );
+    rightsReports = Object.fromEntries(
+      DATA_OWNER_CODES.map((code) => [
+        code,
+        settingsFor(user, code).dailyReport,
+      ]),
+    );
+    rightsModalOpen = true;
+  }
+
+  async function handleSaveRights() {
+    if (!rightsUser) return;
+    rightsSaving = true;
+    error = "";
+    success = "";
+    const user = rightsUser;
+    const changed = DATA_OWNER_CODES.filter((code) => {
+      const initial = settingsFor(user, code);
+      return (
+        rightsCredentials[code] !== initial.canManage ||
+        rightsReports[code] !== initial.dailyReport
+      );
+    });
+    try {
+      await Promise.all(
+        changed.map((code) =>
+          setDataOwnerSettings(user.email, code, {
+            can_manage_vehicle_credentials: rightsCredentials[code],
+            daily_openprio_detection_report: rightsReports[code],
+          }),
+        ),
+      );
+      // Reflect the saved state locally.
+      const newSettings = DATA_OWNER_CODES.filter(
+        (code) =>
+          rightsCredentials[code] ||
+          rightsReports[code] ||
+          user.data_owner_settings?.some((s) => s.data_owner_code === code),
+      ).map((code) => ({
+        data_owner_code: code,
+        can_manage_vehicle_credentials: rightsCredentials[code],
+        daily_openprio_detection_report: rightsReports[code],
+      }));
+      users = users.map((u) =>
+        u.email === user.email ? { ...u, data_owner_settings: newSettings } : u,
+      );
+      success = `Rechten voor ${user.email} zijn opgeslagen.`;
+      rightsUser = null;
+      rightsModalOpen = false;
+    } catch (e) {
+      error = e.message || "Rechten opslaan is mislukt.";
+    } finally {
+      rightsSaving = false;
+    }
+  }
 
   async function loadUsers() {
     loading = true;
@@ -168,6 +268,8 @@
           <TableHead>
             <TableHeadCell>E-mail</TableHeadCell>
             <TableHeadCell>Rol</TableHeadCell>
+            <TableHeadCell>Credential-rechten</TableHeadCell>
+            <TableHeadCell>E-mailrapport</TableHeadCell>
             <TableHeadCell>Aangemaakt op</TableHeadCell>
             <TableHeadCell>Aangemaakt door</TableHeadCell>
             <TableHeadCell>Laatst gebruikt op</TableHeadCell>
@@ -176,7 +278,7 @@
           <TableBody>
             {#if users.length === 0}
               <TableBodyRow>
-                <TableBodyCell colspan={6} class="text-center text-gray-500">
+                <TableBodyCell colspan={8} class="text-center text-gray-500">
                   Geen gebruikers gevonden.
                 </TableBodyCell>
               </TableBodyRow>
@@ -193,6 +295,30 @@
                       {user.role}
                     </span>
                   </TableBodyCell>
+                  <TableBodyCell>
+                    {#if user.role === "admin"}
+                      <span class="text-gray-400">Alle (admin)</span>
+                    {:else}
+                      {@const docs = (user.data_owner_settings ?? [])
+                        .filter((s) => s.can_manage_vehicle_credentials)
+                        .map((s) => s.data_owner_code)}
+                      {#if docs.length > 0}
+                        {docs.join(", ")}
+                      {:else}
+                        <span class="text-gray-400">Geen</span>
+                      {/if}
+                    {/if}
+                  </TableBodyCell>
+                  <TableBodyCell>
+                    {@const reportDocs = (user.data_owner_settings ?? [])
+                      .filter((s) => s.daily_openprio_detection_report)
+                      .map((s) => s.data_owner_code)}
+                    {#if reportDocs.length > 0}
+                      {reportDocs.join(", ")}
+                    {:else}
+                      <span class="text-gray-400">Geen</span>
+                    {/if}
+                  </TableBodyCell>
                   <TableBodyCell>{formatDate(user.created_at)}</TableBodyCell>
                   <TableBodyCell>{user.created_by}</TableBodyCell>
                   <TableBodyCell>
@@ -203,13 +329,24 @@
                     {/if}
                   </TableBodyCell>
                   <TableBodyCell class="text-right">
-                    <Button
-                      color="red"
-                      size="xs"
-                      on:click={() => openDelete(user)}
-                    >
-                      <TrashBinOutline class="h-4 w-4" />
-                    </Button>
+                    <div class="flex justify-end gap-2">
+                      <Button
+                        color="alternative"
+                        size="xs"
+                        title="Dataowner-instellingen beheren"
+                        on:click={() => openRights(user)}
+                      >
+                        <UserSettingsOutline class="h-4 w-4" />
+                      </Button>
+                      <Button
+                        color="red"
+                        size="xs"
+                        title="Gebruiker verwijderen"
+                        on:click={() => openDelete(user)}
+                      >
+                        <TrashBinOutline class="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableBodyCell>
                 </TableBodyRow>
               {/each}
@@ -232,6 +369,74 @@
         Ja, verwijder
       </Button>
       <Button color="alternative" on:click={() => (deleteModalOpen = false)}>
+        Annuleren
+      </Button>
+    </div>
+  </div>
+</Modal>
+
+<!-- Data-owner rights modal -->
+<Modal
+  bind:open={rightsModalOpen}
+  title="Dataowner-instellingen — {rightsUser?.email ?? ''}"
+  size="sm"
+  autoclose={false}
+>
+  <div class="flex flex-col gap-4">
+    <p class="text-sm text-gray-500">
+      Selecteer per dataowner of deze gebruiker voertuigcredentials mag beheren
+      (genereren, resetten en verwijderen) en/of dagelijks het
+      OpenPrio-detectierapport per e-mail ontvangt.
+    </p>
+    {#if rightsUser?.role === "admin"}
+      <Alert color="blue">
+        Beheerders hebben automatisch credential-rechten voor alle dataowners.
+      </Alert>
+    {/if}
+    <table class="w-full text-sm text-gray-900">
+      <thead>
+        <tr class="border-b border-gray-200 text-left text-gray-500">
+          <th class="py-1 font-medium">Dataowner</th>
+          <th class="py-1 text-center font-medium">Credentials</th>
+          <th class="py-1 text-center font-medium">E-mailrapport</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each DATA_OWNER_CODES as code}
+          <tr class="border-b border-gray-100 last:border-0">
+            <td class="py-1.5">{code}</td>
+            <td class="py-1.5 text-center">
+              {#if rightsUser?.role === "admin"}
+                <input
+                  type="checkbox"
+                  checked
+                  disabled
+                  class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600"
+                />
+              {:else}
+                <input
+                  type="checkbox"
+                  bind:checked={rightsCredentials[code]}
+                  class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-blue-500"
+                />
+              {/if}
+            </td>
+            <td class="py-1.5 text-center">
+              <input
+                type="checkbox"
+                bind:checked={rightsReports[code]}
+                class="h-4 w-4 rounded border-gray-300 bg-gray-100 text-blue-600 focus:ring-blue-500"
+              />
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+    <div class="flex justify-end gap-3">
+      <Button color="blue" on:click={handleSaveRights} disabled={rightsSaving}>
+        {rightsSaving ? "Opslaan..." : "Opslaan"}
+      </Button>
+      <Button color="alternative" on:click={() => (rightsModalOpen = false)}>
         Annuleren
       </Button>
     </div>
