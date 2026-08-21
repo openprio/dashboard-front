@@ -6,11 +6,21 @@
     GeoJSON,
     LineLayer,
     FillLayer,
+    Control,
+    ControlGroup,
+    ControlButton,
   } from "svelte-maplibre";
   import type { Feature, FeatureCollection, Point } from "geojson";
   import { userCredential } from "../auth.js";
   import Navigation from "../components/Navigation.svelte";
-  import subscribe from "../socket.js";
+  import subscribe, {
+    environment,
+    feedType,
+    secondaryPosition,
+    subscribe_on_secondary,
+    clear_secondary,
+  } from "../socket.js";
+  import { show_filters } from "../stores/ui.js";
   import Filters from "../components/Filters.svelte";
   import { circle } from "@turf/circle";
   import { onMount } from "svelte";
@@ -60,6 +70,35 @@
             locationHistoryItem.properties.tlc_id === filter_intersection,
         ),
   );
+
+  let secondaryMarker = $derived(
+    $secondaryPosition != null &&
+      selectedVehicle != null &&
+      $secondaryPosition.vehicleDescriptor.dataOwnerCode +
+        ":" +
+        $secondaryPosition.vehicleDescriptor.vehicleNumber ==
+        selectedVehicle.vehicleDescriptor.dataOwnerCode +
+          ":" +
+          selectedVehicle.vehicleDescriptor.vehicleNumber
+      ? $secondaryPosition
+      : null,
+  );
+
+  let secondaryBadge = $derived($feedType === "position" ? "P+" : "P");
+
+  $effect(() => {
+    $environment;
+    $feedType;
+    markers = [];
+    selectedVehicle = null;
+    feedbackHistory = [];
+    locationHistory = [];
+    locationHistoryGeoJSON = {
+      type: "FeatureCollection",
+      features: [],
+    };
+    clear_secondary();
+  });
 
   onMount(() => {
     fetch("/intersections.geojson")
@@ -326,6 +365,7 @@
   </header>
   <main class="flex-1 overflow-y-auto pt-4">
     <div class="flex flex-col md:flex-row">
+      <Filters></Filters>
       <MapLibre
         center={[4.3489627, 52.0248904]}
         zoom={10}
@@ -333,6 +373,41 @@
         standardControls
         style={"https://api.maptiler.com/maps/52e8038c-e9df-4d0e-a6cc-1269d04c9c19/style.json?key=wMttElGnvszMrzou5eQJ"}
       >
+        <Control position="top-left">
+          <ControlGroup>
+            <ControlButton
+              title={"Filters openen — feed: " +
+                ($feedType === "position" ? "Position" : "Position-plus")}
+              on:click={() => show_filters.update((value) => !value)}
+            >
+              <div class="relative">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#333"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path
+                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                  />
+                </svg>
+                <span
+                  class="absolute -right-1 -top-1 h-2 w-2 rounded-full {$feedType ===
+                  'position-plus'
+                    ? 'bg-blue-600'
+                    : 'bg-gray-500'}"
+                ></span>
+              </div>
+            </ControlButton>
+          </ControlGroup>
+        </Control>
         <GeoJSON id="positions" data={locationHistoryGeoJSON}>
           <CircleLayer
             id="cluster_circles"
@@ -383,7 +458,7 @@
             class="relative z-10 grid h-8 w-8 place-items-center"
             on:click={() => {
               selectedVehicle = marker;
-              subscribe.subscribe_on_feedback(
+              subscribe_on_secondary(
                 marker.vehicleDescriptor.dataOwnerCode,
                 marker.vehicleDescriptor.vehicleNumber,
               );
@@ -463,6 +538,42 @@
             {/if}
           </Marker>
         {/each}
+
+        {#if secondaryMarker}
+          <Marker
+            lngLat={[
+              secondaryMarker.position.longitude,
+              secondaryMarker.position.latitude,
+            ]}
+            class="relative z-20 grid h-8 w-8 place-items-center"
+          >
+            <div
+              class="relative flex flex-col items-center"
+              style="transform: rotate({secondaryMarker.position.bearing}deg);"
+            >
+              <div
+                class="h-0 w-0
+        border-b-[36px] border-l-[14px] border-r-[14px]
+        border-b-blue-600 border-l-transparent border-r-transparent
+        drop-shadow-md transition-all duration-300"
+              ></div>
+
+              <div
+                class="absolute top-[3px] h-0 w-0
+        border-b-[30px] border-l-[12px] border-r-[12px]
+        border-b-white border-l-transparent border-r-transparent"
+              ></div>
+
+              <div
+                class="absolute -right-[25px] top-[18px] rotate-90
+        rounded-md bg-blue-600/90 px-1.5 py-[1px] text-[9px]
+        font-semibold text-white shadow-sm backdrop-blur-sm"
+              >
+                {secondaryBadge}
+              </div>
+            </div>
+          </Marker>
+        {/if}
       </MapLibre>
       {#if selectedVehicle}
         <div
@@ -470,7 +581,10 @@
         >
           <button
             class="group flex h-6 w-full items-center justify-center bg-gray-400 text-white hover:bg-gray-700 md:h-full md:w-5"
-            onclick={() => (selectedVehicle = null)}
+            onclick={() => {
+              selectedVehicle = null;
+              clear_secondary();
+            }}
           >
             <div class="rotate-90 md:rotate-0">
               <div
