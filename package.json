@@ -33,6 +33,7 @@
     "flowbite": "^2.5.2",
     "flowbite-svelte": "^0.47.3",
     "flowbite-svelte-icons": "^2.0.2",
+    "maplibre-gl-measures": "^0.0.20",
     "mqtt": "^5.7.2",
     "protobufjs": "^7.2.6",
     "svelte-maplibre": "^0.9.14",

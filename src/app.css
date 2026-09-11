@@ -11,3 +11,13 @@
     src: url(/fonts/Roboto.woff2) format("woff2");
   }
 }
+
+.maplibregl-map[class*="mode-draw_"]
+  .maplibregl-canvas-container.maplibregl-interactive,
+.maplibregl-map[class*="mode-draw_"]
+  .maplibregl-canvas-container.maplibregl-interactive:active {
+  cursor:
+    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48bGluZSB4MT0iMTIiIHkxPSIyLjUiIHgyPSIxMiIgeTI9IjIxLjUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMi41IiB5MT0iMTIiIHgyPSIyMS41IiB5Mj0iMTIiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMTIiIHkxPSIyLjUiIHgyPSIxMiIgeTI9IjIxLjUiIHN0cm9rZT0iIzExMSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMi41IiB5MT0iMTIiIHgyPSIyMS41IiB5Mj0iMTIiIHN0cm9rZT0iIzExMSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=")
+      12 12,
+    crosshair;
+}

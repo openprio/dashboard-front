@@ -35,6 +35,7 @@
     RasterTileSource,
     RasterLayer,
   } from "svelte-maplibre";
+  import MeasuresControl from "maplibre-gl-measures";
   import type { Feature, FeatureCollection, Point } from "geojson";
   import type { RequestStatusUpdate } from "../components/RequestStatusUpdate";
 
@@ -424,6 +425,89 @@
 
     loadData(dataownerCode, vehicleNumber, startDate, endDate);
     updateQueryParams(dataownerCode, vehicleNumber, combinedDate);
+  });
+
+  $effect(() => {
+    const currentMap = map;
+    if (!currentMap) {
+      return;
+    }
+
+    const measuresControl = new MeasuresControl({
+      lang: {
+        lengthMeasurementButtonTitle: "Afstand meten",
+        areaMeasurementButtonTitle: "Oppervlakte meten",
+        clearMeasurementsButtonTitle: "Metingen wissen",
+      },
+      units: "metric",
+      unitsGroupingSeparator: " ",
+      showOnlyTotalLineLength: true,
+      style: {
+        text: {
+          font: "Noto Sans Bold",
+          haloWidth: 3,
+          radialOffset: 1.5,
+        },
+      },
+    });
+    currentMap.addControl(measuresControl, "top-left");
+    currentMap
+      .getContainer()
+      .querySelector('.maplibregl-measures button[title="Oppervlakte meten"]')
+      ?.remove();
+
+    const syncLabelVisibility = () => {
+      if (!currentMap.getLayer("layer-draw-labels")) {
+        return;
+      }
+      const isDrawing = Array.from(currentMap.getContainer().classList).some(
+        (name) => name.startsWith("mode-draw_"),
+      );
+      const target = isDrawing ? "none" : "visible";
+      const current =
+        currentMap.getLayoutProperty("layer-draw-labels", "visibility") ??
+        "visible";
+      if (current !== target) {
+        currentMap.setLayoutProperty("layer-draw-labels", "visibility", target);
+      }
+    };
+    currentMap.on("mousemove", syncLabelVisibility);
+    currentMap.on("mouseup", syncLabelVisibility);
+    currentMap.on("draw.render", syncLabelVisibility);
+    currentMap.on("draw.create", syncLabelVisibility);
+    currentMap.on("draw.delete", syncLabelVisibility);
+
+    const moveToEnd = () => {
+      const container = currentMap
+        .getContainer()
+        .querySelector(".maplibregl-ctrl-top-left");
+      const controlElement = container?.querySelector(".maplibregl-measures");
+      if (container && controlElement) {
+        container.appendChild(controlElement);
+      }
+    };
+    let moveTimer = -1;
+    const scheduleMove = () => {
+      moveTimer = window.setTimeout(moveToEnd, 0);
+    };
+    if (currentMap.loaded()) {
+      scheduleMove();
+    } else {
+      currentMap.on("load", scheduleMove);
+    }
+
+    return () => {
+      clearTimeout(moveTimer);
+      currentMap.off("load", scheduleMove);
+      currentMap.off("mousemove", syncLabelVisibility);
+      currentMap.off("mouseup", syncLabelVisibility);
+      currentMap.off("draw.render", syncLabelVisibility);
+      currentMap.off("draw.create", syncLabelVisibility);
+      currentMap.off("draw.delete", syncLabelVisibility);
+      if (currentMap.hasControl(measuresControl)) {
+        currentMap.removeControl(measuresControl);
+      }
+    };
   });
 </script>
 
