@@ -81,6 +81,17 @@ export async function getReportPreferences() {
 
 // Vehicle credentials
 
+export async function getVehicleRoute(dataOwnerCode, vehicleNumber) {
+  const response = await fetchWithAuth(
+    `/vehicle_route?data_owner_code=${encodeURIComponent(dataOwnerCode)}&vehicle_number=${encodeURIComponent(vehicleNumber)}`,
+  );
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || "Failed to get vehicle route");
+  }
+  return await response.json();
+}
+
 export async function listVehicleCredentials(dataOwnerCode) {
   const response = await fetchWithAuth(
     `/vehicle_credentials?data_owner_code=${encodeURIComponent(dataOwnerCode)}`,

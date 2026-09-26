@@ -24,6 +24,10 @@
   import Filters from "../components/Filters.svelte";
   import { circle } from "@turf/circle";
   import { onMount } from "svelte";
+  import { getVehicleRoute } from "../api.js";
+  import { nearestPointOnLine } from "@turf/nearest-point-on-line";
+  import { lineSliceAlong } from "@turf/line-slice-along";
+  import { length } from "@turf/length";
 
   /**
    * @type {LocationMessage[]}
@@ -86,6 +90,106 @@
 
   let secondaryBadge = $derived($feedType === "position" ? "P+" : "P");
 
+  let vehicleRoute = $state(null);
+
+  let selectedVehicleIdentity = $derived(
+    selectedVehicle == null
+      ? null
+      : selectedVehicle.vehicleDescriptor.dataOwnerCode +
+          ":" +
+          selectedVehicle.vehicleDescriptor.vehicleNumber,
+  );
+
+  let emptyFeatureCollection = () => ({
+    type: "FeatureCollection",
+    features: [],
+  });
+
+  let routeLinesGeoJSON = $derived.by(() => {
+    if (vehicleRoute == null || selectedVehicle == null) {
+      return emptyFeatureCollection();
+    }
+    const route = vehicleRoute.route;
+    if (
+      route == null ||
+      route.type !== "LineString" ||
+      route.coordinates.length < 2
+    ) {
+      return emptyFeatureCollection();
+    }
+    const point = [
+      selectedVehicle.position.longitude,
+      selectedVehicle.position.latitude,
+    ];
+    const nearest = nearestPointOnLine(route, point);
+    const dist = nearest.properties.totalDistance ?? nearest.properties.location;
+    const totalLen = length(route, { units: "kilometers" });
+    const features = [];
+    const past = lineSliceAlong(route, 0, dist, { units: "kilometers" });
+    const ahead = lineSliceAlong(route, dist, totalLen, {
+      units: "kilometers",
+    });
+    if (past.geometry.coordinates.length >= 2) {
+      features.push({
+        type: "Feature",
+        geometry: past.geometry,
+        properties: { color: "#9ca3af" },
+      });
+    }
+    if (ahead.geometry.coordinates.length >= 2) {
+      features.push({
+        type: "Feature",
+        geometry: ahead.geometry,
+        properties: { color: "#2563eb" },
+      });
+    }
+    return { type: "FeatureCollection", features };
+  });
+
+  let trackPointsGeoJSON = $derived.by(() => {
+    if (vehicleRoute == null) {
+      return emptyFeatureCollection();
+    }
+    return {
+      type: "FeatureCollection",
+      features: (vehicleRoute.actual_track ?? []).map(
+        ([longitude, latitude]) => ({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [longitude, latitude] },
+          properties: {},
+        }),
+      ),
+    };
+  });
+
+  $effect(() => {
+    const identity = selectedVehicleIdentity;
+    if (identity == null) {
+      vehicleRoute = null;
+      return;
+    }
+    const split = identity.split(":");
+    const dataOwnerCode = split[0];
+    const vehicleNumber = split[1];
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const result = await getVehicleRoute(dataOwnerCode, vehicleNumber);
+        if (!cancelled) {
+          vehicleRoute = result;
+        }
+      } catch (error) {
+        console.error("Failed to fetch vehicle route:", error);
+      }
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  });
+
   $effect(() => {
     $environment;
     $feedType;
@@ -93,6 +197,7 @@
     selectedVehicle = null;
     feedbackHistory = [];
     locationHistory = [];
+    vehicleRoute = null;
     locationHistoryGeoJSON = {
       type: "FeatureCollection",
       features: [],
@@ -452,6 +557,30 @@
           />
         </GeoJSON>
 
+        {#if vehicleRoute != null}
+          <GeoJSON id="vehicle-route" data={routeLinesGeoJSON}>
+            <LineLayer
+              layout={{ "line-cap": "round", "line-join": "round" }}
+              paint={{
+                "line-color": ["get", "color"],
+                "line-width": 4,
+                "line-opacity": 0.85,
+              }}
+            />
+          </GeoJSON>
+          <GeoJSON id="vehicle-track" data={trackPointsGeoJSON}>
+            <CircleLayer
+              applyToClusters={false}
+              paint={{
+                "circle-color": "#374151",
+                "circle-radius": 3,
+                "circle-stroke-color": "#ffffff",
+                "circle-stroke-width": 1,
+              }}
+            />
+          </GeoJSON>
+        {/if}
+
         {#each markers as marker (marker.vehicleDescriptor.dataOwnerCode + ":" + marker.vehicleDescriptor.vehicleNumber)}
           <Marker
             lngLat={[marker.position.longitude, marker.position.latitude]}
@@ -723,6 +852,25 @@
                       >{selectedVehicle.vehicleDescriptor.journeyDescriptor
                         .operatingDay}</span
                     >
+                  </div>
+                </div>
+              </div>
+            {/if}
+            {#if vehicleRoute != null && vehicleRoute.journey != null}
+              <div class="flex flex-col">
+                <h1 class="text-lg font-bold">Route</h1>
+                <div class="flex flex-col">
+                  <div class="flex justify-between gap-2">
+                    <h3>Lijn</h3>
+                    <span>{vehicleRoute.journey.line_planning_number}</span>
+                  </div>
+                  <div class="flex justify-between gap-2">
+                    <h3>Ritnummer</h3>
+                    <span>{vehicleRoute.journey.journey_number}</span>
+                  </div>
+                  <div class="flex justify-between gap-2">
+                    <h3>Richting</h3>
+                    <span>{vehicleRoute.journey.direction}</span>
                   </div>
                 </div>
               </div>
