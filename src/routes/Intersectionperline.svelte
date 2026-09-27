@@ -103,27 +103,52 @@
       header: () =>
         renderSnippet(defaultHeaderTitle, "Tijd op kruising gemiddeld"),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
+        renderSnippet(
+          defaultCell,
+          cell.getValue() == null
+            ? "-"
+            : `${cell.getValue()?.toFixed(1)}s`,
+        ),
     }),
     colHelp.accessor("min_time_at_intersection", {
       header: () => renderSnippet(defaultHeaderTitle, "min."),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
+        renderSnippet(
+          defaultCell,
+          cell.getValue() == null
+            ? "-"
+            : `${cell.getValue()?.toFixed(1)}s`,
+        ),
     }),
     colHelp.accessor("max_time_at_intersection", {
       header: () => renderSnippet(defaultHeaderTitle, "max."),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
+        renderSnippet(
+          defaultCell,
+          cell.getValue() == null
+            ? "-"
+            : `${cell.getValue()?.toFixed(1)}s`,
+        ),
     }),
     colHelp.accessor("median_time_at_intersection", {
       header: () => renderSnippet(defaultHeaderTitle, "mediaan"),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
+        renderSnippet(
+          defaultCell,
+          cell.getValue() == null
+            ? "-"
+            : `${cell.getValue()?.toFixed(1)}s`,
+        ),
     }),
     colHelp.accessor("percent85_time_at_intersection", {
       header: () => renderSnippet(defaultHeaderTitle, "85% percentile"),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
+        renderSnippet(
+          defaultCell,
+          cell.getValue() == null
+            ? "-"
+            : `${cell.getValue()?.toFixed(1)}s`,
+        ),
     }),
   ];
 
