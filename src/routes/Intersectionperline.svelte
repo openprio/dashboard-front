@@ -42,11 +42,11 @@
     count_ssm_proccessing: number;
     count_ssm_granted: number;
     count_openprio_received: number;
-    average_time_at_intersection: number;
-    max_time_at_intersection: number;
-    min_time_at_intersection: number;
-    median_time_at_intersection: number;
-    percent85_time_at_intersection: number;
+    average_time_at_intersection: number | null;
+    max_time_at_intersection: number | null;
+    min_time_at_intersection: number | null;
+    median_time_at_intersection: number | null;
+    percent85_time_at_intersection: number | null;
     openprio_received_ratio: PercentageBarData;
     requested_ratio: PercentageBarData;
     processing_ratio: PercentageBarData;
@@ -103,27 +103,27 @@
       header: () =>
         renderSnippet(defaultHeaderTitle, "Tijd op kruising gemiddeld"),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`),
+        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
     }),
     colHelp.accessor("min_time_at_intersection", {
       header: () => renderSnippet(defaultHeaderTitle, "min."),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`),
+        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
     }),
     colHelp.accessor("max_time_at_intersection", {
       header: () => renderSnippet(defaultHeaderTitle, "max."),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`),
+        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
     }),
     colHelp.accessor("median_time_at_intersection", {
       header: () => renderSnippet(defaultHeaderTitle, "mediaan"),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`),
+        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
     }),
     colHelp.accessor("percent85_time_at_intersection", {
       header: () => renderSnippet(defaultHeaderTitle, "85% percentile"),
       cell: ({ cell }) =>
-        renderSnippet(defaultCell, `${cell.getValue().toFixed(1)}s`),
+        renderSnippet(defaultCell, `${cell.getValue()?.toFixed(1) ?? "-"}s`),
     }),
   ];
 
