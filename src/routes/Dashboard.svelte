@@ -23,7 +23,9 @@
   } from "../socket.js";
   import { show_filters } from "../stores/ui.js";
   import Filters from "../components/Filters.svelte";
+  import Chart from "../components/Chart.svelte";
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import { DATA_OWNER_CODES, DATA_OWNER_COLORS } from "../constants.js";
   import { getVehicleRoute } from "../api.js";
   import { nearestPointOnLine } from "@turf/nearest-point-on-line";
@@ -34,6 +36,7 @@
   const FLUSH_INTERVAL_MS = 100;
   const MAX_LOCATION_HISTORY = 1000;
   const MAX_FEEDBACK_HISTORY = 200;
+  const MAX_LATENCY_SAMPLES = 300;
   const LABEL_MIN_ZOOM = 14;
   // Vehicles are clustered while zoomed out (zoom <= CLUSTER_MAX_ZOOM) and
   // shown individually once zoomed in (zoom > CLUSTER_MAX_ZOOM).
@@ -352,6 +355,126 @@
 
   let locationHistory = $state([]);
 
+  let latencyHistory = $state({
+    position: [],
+    "position-plus": [],
+  });
+
+  function otherFeedType(feed) {
+    return feed === "position" ? "position-plus" : "position";
+  }
+
+  function recordLatency(feed, message) {
+    if (latencyHistory[feed] == null || message?.timestamp == null) {
+      return;
+    }
+    const now = Date.now();
+    latencyHistory[feed].push({ x: now, y: now - message.timestamp });
+    if (latencyHistory[feed].length > MAX_LATENCY_SAMPLES) {
+      latencyHistory[feed].splice(
+        0,
+        latencyHistory[feed].length - MAX_LATENCY_SAMPLES,
+      );
+    }
+  }
+
+  let latencyChartOpen = $state(false);
+
+  let latencyChartData = $derived({
+    datasets: [
+      {
+        label: "Position",
+        data: latencyHistory.position,
+        borderColor: "#3b82f6",
+        backgroundColor: "rgba(59, 130, 246, 0.12)",
+        fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        borderWidth: 1.5,
+        tension: 0.35,
+        spanGaps: true,
+      },
+      {
+        label: "Position-plus",
+        data: latencyHistory["position-plus"],
+        borderColor: "#10b981",
+        backgroundColor: "rgba(16, 185, 129, 0.12)",
+        fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        borderWidth: 1.5,
+        tension: 0.35,
+        spanGaps: true,
+      },
+    ],
+  });
+
+  const latencyChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: {
+        display: true,
+        position: "bottom",
+        labels: {
+          usePointStyle: true,
+          pointStyle: "circle",
+          boxWidth: 6,
+          boxHeight: 6,
+          padding: 12,
+          color: "#4b5563",
+          font: { size: 10 },
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(17, 24, 39, 0.9)",
+        padding: 8,
+        cornerRadius: 6,
+        titleFont: { size: 11 },
+        bodyFont: { size: 11 },
+        callbacks: {
+          label: (context) => `${context.dataset.label}: ${context.parsed.y}ms`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        type: "time",
+        time: {
+          unit: "second",
+          tooltipFormat: "HH:mm:ss",
+          displayFormats: {
+            second: "HH:mm:ss",
+            minute: "HH:mm:ss",
+            hour: "HH:mm",
+            day: "dd-MM HH:mm",
+          },
+        },
+        grid: { display: false },
+        border: { display: false },
+        ticks: {
+          maxTicksLimit: 4,
+          color: "#9ca3af",
+          font: { size: 9 },
+        },
+      },
+      y: {
+        type: "linear",
+        beginAtZero: true,
+        grid: { color: "rgba(17, 24, 39, 0.06)" },
+        border: { display: false },
+        ticks: {
+          maxTicksLimit: 4,
+          color: "#9ca3af",
+          font: { size: 9 },
+          callback: (value) => `${value}ms`,
+        },
+      },
+    },
+  };
+
   let filter_intersection = $state(null);
 
   // Create a FeatureCollection
@@ -570,6 +693,7 @@
 
         if (selectedVehicleIdentity === vehicleId) {
           selectedVehicle = currentMessage;
+          recordLatency(get(feedType), currentMessage);
           let historyPoint: Feature<Point> = {
             type: "Feature",
             geometry: {
@@ -600,6 +724,18 @@
       unsubscribe();
       clearInterval(flushInterval);
     };
+  });
+
+  onMount(() => {
+    return secondaryPosition.subscribe((message) => {
+      if (!message || selectedVehicleIdentity == null) {
+        return;
+      }
+      if (vehicleIdOf(message) !== selectedVehicleIdentity) {
+        return;
+      }
+      recordLatency(otherFeedType(get(feedType)), message);
+    });
   });
 
   onMount(() => {
@@ -656,6 +792,7 @@
   function resetLocationHistory() {
     feedbackHistory = [];
     locationHistory = [];
+    latencyHistory = { position: [], "position-plus": [] };
     locationHistoryGeoJSON = {
       type: "FeatureCollection",
       features: locationHistory,
@@ -1251,6 +1388,41 @@
                 <span>{new Date().getTime() - selectedVehicle.timestamp}ms</span
                 >
               </div>
+            </div>
+            <div class="flex flex-col">
+              <button
+                class="flex w-full items-center justify-between gap-2"
+                onclick={() => (latencyChartOpen = !latencyChartOpen)}
+              >
+                <h1 class="text-lg font-bold">Latency vergelijking</h1>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="text-gray-400 transition-transform duration-200 {latencyChartOpen
+                    ? 'rotate-180'
+                    : ''}"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              {#if latencyChartOpen}
+                <div
+                  class="mt-2 h-48 rounded-lg border border-gray-200 bg-white/70 p-2 shadow-inner"
+                >
+                  <Chart
+                    type="line"
+                    data={latencyChartData}
+                    options={latencyChartOptions}
+                  ></Chart>
+                </div>
+              {/if}
             </div>
             {#if selectedVehicle.vehicleDescriptor.journeyDescriptor != null}
               <div class="flex flex-col">
