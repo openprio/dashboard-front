@@ -492,6 +492,8 @@
 
   let intersectionsById = new Map();
 
+  let selectedIntersectionKey = $state<string | null>(null);
+
   let filteredFeedbackHistory = $derived(
     filter_intersection == null
       ? feedbackHistory
@@ -809,6 +811,21 @@
     return numberToColorHex(intersection.intersection_id);
   }
 
+  function formatPropertyList(value: unknown): string {
+    let items: string[] = [];
+    if (Array.isArray(value)) {
+      items = value.map(String);
+    } else if (typeof value === "string" && value.trim() !== "") {
+      try {
+        const parsed = JSON.parse(value);
+        items = Array.isArray(parsed) ? parsed.map(String) : [value];
+      } catch {
+        items = [value];
+      }
+    }
+    return items.length ? items.join(", ") : "-";
+  }
+
   function pulseAtIntersection(roadRegulatorId, intersectionId, color) {
     const intersection = intersectionsById.get(
       `${roadRegulatorId}:${intersectionId}`,
@@ -1054,28 +1071,87 @@
             id="intersection_circles"
             paint={{
               "circle-color": ["get", "color"],
-              "circle-radius": 6,
+              "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                6,
+                0.8,
+                8,
+                1.5,
+                11,
+                4,
+                14,
+                7,
+              ],
               "circle-stroke-color": "#ffffff",
-              "circle-stroke-width": 1,
+              "circle-stroke-width": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                8,
+                0.3,
+                11,
+                1,
+              ],
             }}
           >
-            <Popup openOn="click" closeOnClickOutside>
-              {#if data}
-                <div class="text-sm">
-                  <div class="font-medium">{data.properties.intersection_name}</div>
-                  <div>TLC: {data.properties.tlc_id}</div>
-                  <div>TLC alias: {data.properties.tlc_alias ?? "-"}</div>
-                  <div>
-                    PBC: {data.properties.pbc_configuration?.length
-                      ? data.properties.pbc_configuration.join(", ")
-                      : "-"}
+            <Popup openOn="click" closeOnClickOutside let:features let:data>
+              {#if features?.length || data}
+                {@const intersections = features?.length
+                  ? features
+                  : data
+                    ? [data]
+                    : []}
+                {@const selected =
+                  intersections.find(
+                    (feature) =>
+                      `${feature?.properties?.road_regulator_id}:${feature?.properties?.intersection_id}` ===
+                      selectedIntersectionKey,
+                  ) ?? intersections[0]}
+                {#if selected}
+                  {@const selectedKey = `${selected.properties?.road_regulator_id}:${selected.properties?.intersection_id}`}
+                  <div class="text-sm">
+                    {#if intersections.length > 1}
+                      <div class="mb-2">
+                        <div class="mb-1 text-xs font-medium text-gray-500">
+                          {intersections.length} kruisingen op deze locatie
+                        </div>
+                        <select
+                          class="w-full rounded border border-gray-300 bg-white p-1 text-sm"
+                          value={selectedKey}
+                          onchange={(e) =>
+                            (selectedIntersectionKey = e.currentTarget.value)}
+                        >
+                          {#each intersections as intersection}
+                            {@const key = `${intersection?.properties?.road_regulator_id}:${intersection?.properties?.intersection_id}`}
+                            <option value={key}>
+                              {intersection?.properties?.intersection_name}
+                              ({intersection?.properties?.intersection_id})
+                            </option>
+                          {/each}
+                        </select>
+                      </div>
+                    {/if}
+                    <div class="font-medium">
+                      {selected.properties?.intersection_name}
+                    </div>
+                    <div>TLC: {selected.properties?.tlc_id}</div>
+                    <div>
+                      TLC alias: {selected.properties?.tlc_alias ?? "-"}
+                    </div>
+                    <div>
+                      PBC: {formatPropertyList(
+                        selected.properties?.pbc_configuration,
+                      )}
+                    </div>
+                    <div>
+                      Use cases: {formatPropertyList(
+                        selected.properties?.use_cases,
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    Use cases: {data.properties.use_cases?.length
-                      ? data.properties.use_cases.join(", ")
-                      : "-"}
-                  </div>
-                </div>
+                {/if}
               {/if}
             </Popup>
           </CircleLayer>
