@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy, onMount } from "svelte";
   import Navigation from "../components/Navigation.svelte";
   import {
     createColumnHelper,
@@ -29,9 +30,10 @@
 
   let filterOperatingHours = $state(false);
 
-  filterOperatingSub.sub((value) => {
+  const unsubscribeFilterOperatingHours = filterOperatingSub.sub((value) => {
     filterOperatingHours = value.valueOf();
   });
+  onDestroy(unsubscribeFilterOperatingHours);
 
   type VehicleLink = {
     data_owner_code: string;
@@ -167,8 +169,10 @@
   }
 
   loadQueryParams();
-  window.addEventListener("popstate", () => {
-    loadQueryParams();
+  onMount(() => {
+    const handlePopState = () => loadQueryParams();
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   });
 
   function updateQueryParams(operationDate, selectedDataOwner, activeTab) {
@@ -259,6 +263,10 @@
     timeoutId = setTimeout(() => {
       updateQueryParams(date, doc, tab);
     }, 500);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   });
 </script>
 

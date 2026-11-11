@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import Navigation from "../components/Navigation.svelte";
   import {
     createColumnHelper,
@@ -25,15 +25,10 @@
 
   let filterOperatingHours = $state(false);
 
-  filterOperatingSub.sub((value) => {
+  const unsubscribeFilterOperatingHours = filterOperatingSub.sub((value) => {
     filterOperatingHours = value.valueOf();
   });
-
-  let filter = $state(false);
-
-  filterOperatingSub.sub((value) => {
-    filter = value.valueOf();
-  });
+  onDestroy(unsubscribeFilterOperatingHours);
 
   type JourneyOverview = {
     dated_journey_id: number;
@@ -181,11 +176,10 @@
   }
 
   loadQueryParams();
-  window.addEventListener("popstate", () => {
-    console.log(event.target);
-    console.log("HIER");
-    loadQueryParams();
-    //window.history.back();
+  onMount(() => {
+    const handlePopState = () => loadQueryParams();
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   });
 
   function updateQueryParams(
@@ -294,6 +288,10 @@
         linePlanningNumber,
       );
     }, 500);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   });
 </script>
 

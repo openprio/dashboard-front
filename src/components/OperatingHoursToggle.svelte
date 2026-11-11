@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import filterOperatingHours from "./OperatingHoursStore";
 
   let filter = $state(false);
 
-  filterOperatingHours.sub((value) => {
+  const unsubscribeFilterOperatingHours = filterOperatingHours.sub((value) => {
     filter = value.valueOf();
   });
+  onDestroy(unsubscribeFilterOperatingHours);
 
   function toggleFilter() {
     filterOperatingHours.set(!filter);

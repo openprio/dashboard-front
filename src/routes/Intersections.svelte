@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import Navigation from "../components/Navigation.svelte";
   import {
     createColumnHelper,
@@ -23,9 +23,10 @@
 
   let filterOperatingHours = $state(false);
 
-  filterOperatingSub.sub((value) => {
+  const unsubscribeFilterOperatingHours = filterOperatingSub.sub((value) => {
     filterOperatingHours = value.valueOf();
   });
+  onDestroy(unsubscribeFilterOperatingHours);
 
   type IntersectionLink = {
     road_regulator_id: number;
@@ -224,10 +225,16 @@
     timeoutId = setTimeout(() => {
       updateQueryParams(operationDate, selectedRoadRegulator);
     }, 500);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   });
 
-  window.addEventListener("popstate", () => {
-    loadQueryParams();
+  onMount(() => {
+    const handlePopState = () => loadQueryParams();
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
   });
 
   onMount(async () => {

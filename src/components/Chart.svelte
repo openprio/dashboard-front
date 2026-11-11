@@ -26,21 +26,19 @@
   let chartObject = null;
 
   function chart(node, data) {
-    function setupChart(data) {
-      chartObject = new Chart(node, {
-        type: type,
-        data: data,
-        options: options,
-      });
-    }
-    setupChart(data);
+    chartObject = new Chart(node, {
+      type: type,
+      data: data,
+      options: options,
+    });
     return {
       update(data) {
-        chartObject.destroy();
-        setupChart(data);
+        chartObject.data = data;
+        chartObject.update();
       },
       destroy() {
         chartObject.destroy();
+        chartObject = null;
       },
     };
   }

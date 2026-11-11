@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import Navigation from "../components/Navigation.svelte";
   import {
     createColumnHelper,
@@ -17,9 +17,10 @@
 
   let filterOperatingHours = $state(false);
 
-  filterOperatingSub.sub((value) => {
+  const unsubscribeFilterOperatingHours = filterOperatingSub.sub((value) => {
     filterOperatingHours = value.valueOf();
   });
+  onDestroy(unsubscribeFilterOperatingHours);
 
   type DatedJourneyLink = {
     dated_journey_id: number;

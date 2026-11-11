@@ -25,6 +25,7 @@
   import Filters from "../components/Filters.svelte";
   import Chart from "../components/Chart.svelte";
   import { onMount } from "svelte";
+  import { Link } from "svelte-routing";
   import { get } from "svelte/store";
   import { DATA_OWNER_CODES, DATA_OWNER_COLORS } from "../constants.js";
   import { getVehicleRoute } from "../api.js";
@@ -59,6 +60,12 @@
   const CLUSTER_COLORS = ["#60a5fa", "#3b82f6", "#2563eb", "#1e40af"];
   const CLUSTER_ICON_CELL = 80;
   const CLUSTER_DISC_RADIUS = 22;
+
+  const INTERSECTION_GRANTED_COLOR = "#16a34a";
+  const INTERSECTION_NOT_GRANTED_COLOR = "#b91c1c";
+  const INTERSECTION_UNKNOWN_COLOR = "#9ca3af";
+
+  const currentOperationDate = new Date().toJSON().slice(0, 10);
 
   /**
    * Full location messages keyed by `dataOwnerCode:vehicleNumber`, so updates
@@ -492,13 +499,31 @@
 
   let intersectionsById = new Map();
 
+  let intersectionsLookup = $derived(
+    new Map(
+      intersectionsGeoJSON.features.map((feature) => [
+        `${feature.properties?.road_regulator_id}:${feature.properties?.intersection_id}`,
+        feature.properties,
+      ]),
+    ),
+  );
+
   let selectedIntersectionKey = $state<string | null>(null);
+
+  function intersectionKeyForFeedback(feedbackItem) {
+    return `${feedbackItem.tlc_region}:${feedbackItem.tlc_id}`;
+  }
+
+  function intersectionForFeedback(feedbackItem) {
+    return intersectionsLookup.get(intersectionKeyForFeedback(feedbackItem));
+  }
 
   let filteredFeedbackHistory = $derived(
     filter_intersection == null
       ? feedbackHistory
       : feedbackHistory.filter(
-          (feedbackItem) => feedbackItem.tlc_id === filter_intersection,
+          (feedbackItem) =>
+            intersectionKeyForFeedback(feedbackItem) === filter_intersection,
         ),
   );
   let secondaryMarker = $derived(
@@ -650,6 +675,7 @@
           },
           properties: {
             color: intersectionColor(intersection),
+            sort_key: intersectionSortKey(intersection),
             road_regulator_id: intersection.road_regulator_id,
             intersection_id: intersection.intersection_id,
             intersection_name: intersection.intersection_name,
@@ -801,14 +827,28 @@
     };
   }
 
+  function isPbcConfigured(intersection) {
+    return intersection.public_transport_pbc_configured ?? false;
+  }
+
   function intersectionColor(intersection) {
-    if (!intersection.has_pbc_road_operator) {
-      return "#9ca3af";
+    if (!isPbcConfigured(intersection)) {
+      return INTERSECTION_UNKNOWN_COLOR;
     }
     if (!intersection.has_granted_today) {
-      return "#b91c1c";
+      return INTERSECTION_NOT_GRANTED_COLOR;
     }
-    return numberToColorHex(intersection.intersection_id);
+    return INTERSECTION_GRANTED_COLOR;
+  }
+
+  function intersectionSortKey(intersection) {
+    if (!isPbcConfigured(intersection)) {
+      return 0;
+    }
+    if (!intersection.has_granted_today) {
+      return 1;
+    }
+    return 2;
   }
 
   function formatPropertyList(value: unknown): string {
@@ -841,7 +881,7 @@
     pulseMarkers.push(pulse);
     setTimeout(() => {
       pulseMarkers = pulseMarkers.filter((p) => p.id !== pulse.id);
-    }, 2000);
+    }, 3000);
   }
 
   function getFeedbackColor(msg) {
@@ -970,10 +1010,6 @@
     return colors[number % colors.length];
   }
 
-  function numberToColor(num) {
-    return `border-color: ${numberToColorHex(num)};`;
-  }
-
   function vehicleDirection(doorStatus: number) {
     switch (doorStatus) {
       case 1: {
@@ -1069,6 +1105,7 @@
         <GeoJSON id="intersections" data={intersectionsGeoJSON}>
           <CircleLayer
             id="intersection_circles"
+            layout={{ "circle-sort-key": ["get", "sort_key"] }}
             paint={{
               "circle-color": ["get", "color"],
               "circle-radius": [
@@ -1103,38 +1140,67 @@
                   : data
                     ? [data]
                     : []}
+                {@const intersectionsOrdered = [...intersections].sort(
+                  (a, b) =>
+                    (b?.properties?.sort_key ?? 0) -
+                    (a?.properties?.sort_key ?? 0),
+                )}
                 {@const selected =
-                  intersections.find(
+                  intersectionsOrdered.find(
                     (feature) =>
                       `${feature?.properties?.road_regulator_id}:${feature?.properties?.intersection_id}` ===
                       selectedIntersectionKey,
-                  ) ?? intersections[0]}
+                  ) ?? intersectionsOrdered[0]}
                 {#if selected}
                   {@const selectedKey = `${selected.properties?.road_regulator_id}:${selected.properties?.intersection_id}`}
                   <div class="text-sm">
-                    {#if intersections.length > 1}
+                    {#if intersectionsOrdered.length > 1}
                       <div class="mb-2">
                         <div class="mb-1 text-xs font-medium text-gray-500">
-                          {intersections.length} kruisingen op deze locatie
+                          {intersectionsOrdered.length} kruisingen op deze
+                          locatie
                         </div>
-                        <select
-                          class="w-full rounded border border-gray-300 bg-white p-1 text-sm"
-                          value={selectedKey}
-                          onchange={(e) =>
-                            (selectedIntersectionKey = e.currentTarget.value)}
+                        <div
+                          class="max-h-40 overflow-y-auto rounded border border-gray-300 bg-white"
                         >
-                          {#each intersections as intersection}
+                          {#each intersectionsOrdered as intersection}
                             {@const key = `${intersection?.properties?.road_regulator_id}:${intersection?.properties?.intersection_id}`}
-                            <option value={key}>
-                              {intersection?.properties?.intersection_name}
-                              ({intersection?.properties?.intersection_id})
-                            </option>
+                            <button
+                              type="button"
+                              class="flex w-full items-center gap-2 px-2 py-1 text-left text-sm hover:bg-gray-100 {key ===
+                              selectedKey
+                                ? 'bg-blue-50 font-medium'
+                                : ''}"
+                              onclick={() =>
+                                (selectedIntersectionKey = key)}
+                            >
+                              <span
+                                class="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10"
+                                style={`background-color: ${intersection
+                                  ?.properties?.color ?? INTERSECTION_UNKNOWN_COLOR};`}
+                              ></span>
+                              <span class="truncate">
+                                {intersection?.properties?.intersection_name}
+                                ({intersection?.properties?.intersection_id})
+                              </span>
+                            </button>
                           {/each}
-                        </select>
+                        </div>
                       </div>
                     {/if}
                     <div class="font-medium">
-                      {selected.properties?.intersection_name}
+                      {#if $userCredential}
+                        <Link
+                          class="text-blue-600 hover:underline"
+                          to={`/intersections/${currentOperationDate}/${selected
+                            .properties?.road_regulator_id}/${selected.properties
+                            ?.intersection_id}`}
+                        >
+                          {selected.properties?.intersection_name}
+                        </Link>
+                      {:else}
+                        {selected.properties?.intersection_name}
+                      {/if}
                     </div>
                     <div>TLC: {selected.properties?.tlc_id}</div>
                     <div>
@@ -1286,7 +1352,7 @@
             class="pointer-events-none z-20 grid place-items-center"
           >
             <div
-              class="h-5 w-5 animate-ping rounded-full border-2 [animation-duration:2s]"
+              class="intersection-pulse h-5 w-5 rounded-full border-2"
               style={`border-color: ${pulse.color};`}
             ></div>
           </Marker>
@@ -1556,20 +1622,27 @@
                 <div class="m-1 flex flex-row justify-between">
                   <h2 class="text-lg font-bold">Log (SRM + SSM)</h2>
                   {#if filter_intersection != null}
+                    {@const filterIntersection = intersectionsLookup.get(
+                      filter_intersection,
+                    )}
                     <button
                       class="rounded border border-r-8 p-0.5 text-sm"
-                      style={numberToColor(filter_intersection)}
+                      style={`border-color: ${filterIntersection?.color ??
+                        INTERSECTION_UNKNOWN_COLOR};`}
                       onclick={() => {
                         filter_intersection = null;
                       }}
                     >
-                      {filter_intersection}</button
+                      {filterIntersection?.intersection_name ??
+                        filter_intersection}</button
                     >
                   {/if}
                 </div>
                 <div class="h-[2px] w-full bg-blue-500"></div>
               </div>
               {#each filteredFeedbackHistory as historyItem}
+                {@const historyIntersection =
+                  intersectionForFeedback(historyItem)}
                 <div class="w-full rounded bg-gray-200 p-4">
                   <div class="flex flex-row justify-between">
                     <div>
@@ -1581,10 +1654,14 @@
                     </div>
                     <button
                       class="rounded border border-r-8 p-0.5 text-sm"
-                      style={numberToColor(historyItem.tlc_id)}
+                      style={`border-color: ${historyIntersection?.color ??
+                        INTERSECTION_UNKNOWN_COLOR};`}
                       onclick={() => {
-                        filter_intersection = historyItem.tlc_id;
-                      }}>{historyItem.tlc_id}</button
+                        filter_intersection =
+                          intersectionKeyForFeedback(historyItem);
+                      }}
+                      >{historyIntersection?.intersection_name ??
+                        historyItem.tlc_id}</button
                     >
                     {#if historyItem.type_of_msg == "srm"}
                       <div class="flex flex-row">
@@ -1670,3 +1747,20 @@
     </div>
   </main>
 </div>
+
+<style>
+  @keyframes intersection-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(3.5);
+      opacity: 0;
+    }
+  }
+
+  .intersection-pulse {
+    animation: intersection-pulse 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+</style>

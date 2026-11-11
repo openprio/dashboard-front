@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import Navigation from "../components/Navigation.svelte";
   import { getIdToken } from "../auth";
   import Chart from "../components/Chart.svelte";
@@ -12,9 +12,10 @@
 
   let filterOperatingHours = $state(false);
 
-  filterOperatingSub.sub((value) => {
+  const unsubscribeFilterOperatingHours = filterOperatingSub.sub((value) => {
     filterOperatingHours = value.valueOf();
   });
+  onDestroy(unsubscribeFilterOperatingHours);
 
   let roadRegulators = $state([]);
   let selectedRoadRegulator = $state(null);
