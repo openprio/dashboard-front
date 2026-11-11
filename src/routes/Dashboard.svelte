@@ -675,6 +675,7 @@
           },
           properties: {
             color: intersectionColor(intersection),
+            border_color: numberToColorHex(intersection.intersection_id),
             sort_key: intersectionSortKey(intersection),
             road_regulator_id: intersection.road_regulator_id,
             intersection_id: intersection.intersection_id,
@@ -1121,7 +1122,7 @@
                 14,
                 7,
               ],
-              "circle-stroke-color": "#ffffff",
+              "circle-stroke-color": ["get", "border_color"],
               "circle-stroke-width": [
                 "interpolate",
                 ["linear"],
@@ -1175,20 +1176,34 @@
                                 (selectedIntersectionKey = key)}
                             >
                               <span
-                                class="h-2.5 w-2.5 shrink-0 rounded-full border border-black/10"
+                                class="h-2.5 w-2.5 shrink-0 rounded-full border"
                                 style={`background-color: ${intersection
-                                  ?.properties?.color ?? INTERSECTION_UNKNOWN_COLOR};`}
+                                  ?.properties?.color ??
+                                INTERSECTION_UNKNOWN_COLOR}; border-color: ${intersection
+                                  ?.properties?.border_color ??
+                                INTERSECTION_UNKNOWN_COLOR};`}
                               ></span>
                               <span class="truncate">
                                 {intersection?.properties?.intersection_name}
                                 ({intersection?.properties?.intersection_id})
                               </span>
+                              <span
+                                class="h-2.5 w-2.5 shrink-0 rounded-full"
+                                style={`background-color: ${intersection
+                                  ?.properties?.border_color ??
+                                INTERSECTION_UNKNOWN_COLOR};`}
+                              ></span>
                             </button>
                           {/each}
                         </div>
                       </div>
                     {/if}
-                    <div class="font-medium">
+                    <div class="flex items-center gap-2 font-medium">
+                      <span
+                        class="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={`background-color: ${selected.properties
+                          ?.border_color ?? INTERSECTION_UNKNOWN_COLOR};`}
+                      ></span>
                       {#if $userCredential}
                         <Link
                           class="text-blue-600 hover:underline"
@@ -1625,10 +1640,15 @@
                     {@const filterIntersection = intersectionsLookup.get(
                       filter_intersection,
                     )}
+                    {@const filterTlcId = filter_intersection
+                      .split(":")
+                      .pop()}
                     <button
                       class="rounded border border-r-8 p-0.5 text-sm"
-                      style={`border-color: ${filterIntersection?.color ??
-                        INTERSECTION_UNKNOWN_COLOR};`}
+                      style={`border-color: ${
+                        filterIntersection?.border_color ??
+                        numberToColorHex(filterTlcId)
+                      };`}
                       onclick={() => {
                         filter_intersection = null;
                       }}
@@ -1654,8 +1674,10 @@
                     </div>
                     <button
                       class="rounded border border-r-8 p-0.5 text-sm"
-                      style={`border-color: ${historyIntersection?.color ??
-                        INTERSECTION_UNKNOWN_COLOR};`}
+                      style={`border-color: ${
+                        historyIntersection?.border_color ??
+                        numberToColorHex(historyItem.tlc_id)
+                      };`}
                       onclick={() => {
                         filter_intersection =
                           intersectionKeyForFeedback(historyItem);
